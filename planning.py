@@ -2,32 +2,35 @@ import os
 import json
 import random
 import openpyxl
+from datetime import datetime
 from openpyxl.styles import PatternFill
 from mutagen import File
 
 # Move to the correct directory
 os.chdir(r"File")
+current_datetime = datetime.now().strftime("%Y-%m-%d %H-%M")
 
 # Function to find the ad block
 
 
-def find_ab(percent):
+def find_ab(percentage):
     global adblock
-    print(percent)
-    if percent == 0:
+
+    if percentage == 0:
         adblock = 0
-    elif 0.05 >= percent > 0:
+    elif 0.05 >= percentage > 0:
         adblock = 1
-    elif 0.14 >= percent > 0.05:
+    elif 0.14 >= percentage > 0.05:
         adblock = 2
-    elif 0.19 >= percent > 0.14:
+    elif 0.19 >= percentage > 0.14:
         adblock = 3
-    elif 1 >= percent > 0.14:
+    elif 1 >= percentage > 0.14:
         adblock = 4
     else:
         print("too much")
-    print(adblock)
+
     return adblock
+
 
 # Convert hour format to seconds
 def hour_to_seconds(time):
@@ -43,6 +46,7 @@ def hour_to_seconds(time):
         b += str(x)
     a += int(b)
     return a
+
 
 # Convert seconds to hour format
 def sec_to_hour(time):
@@ -66,6 +70,7 @@ def sec_to_hour(time):
     else:
         b = b + str(time)
     return b
+
 
 # Sort the list
 def sort_list(repeat):
@@ -93,12 +98,14 @@ def sort_list(repeat):
         iter = pos
     return arr_llst, repeat
 
+
 # Rearrange the list based on indices
 def rearrange(index, lists):
     new_list = []
     for i in range(len(index)):
         new_list.append(lists[index[i]])
     return new_list
+
 
 # Initialize variables
 song_name = []
@@ -159,11 +166,8 @@ indeces, ad_repeat = sort_list(ad_repeat)
 ad_name = rearrange(indeces, ad_name)
 ad_dur = rearrange(indeces, ad_dur)
 
-
-
 # Create workbook
 wb = openpyxl.Workbook()
-
 
 for times in range(len(object_name)):
     index_20_start = len(ad_name)
@@ -185,7 +189,7 @@ for times in range(len(object_name)):
         percent = ad_sum / working_time
         adlimit = find_ab(percent)
     block_period = 0
-    if (len(ad_name) % adlimit == 0):
+    if len(ad_name) % adlimit == 0:
         block_period = len(ad_name) / adlimit
     else:
         block_period = int(len(ad_name) / adlimit) + 1
@@ -361,5 +365,7 @@ for times in range(len(object_name)):
 
     ws.column_dimensions['A'].width = 66
 
+filename = f"Медиаплан {ad_number} реклам 20,15,10,5 повторов {all_dur} сек {current_datetime}.xlsx"
+
 del wb['Sheet']
-wb.save("Медиаплан " + str(ad_number) + " реклам 20,15,10,5 повторов " + str(all_dur) + " сек.xlsx")
+wb.save(filename)
