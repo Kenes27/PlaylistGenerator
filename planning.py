@@ -6,7 +6,7 @@ from datetime import datetime
 from openpyxl.styles import PatternFill
 from mutagen import File
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, simpledialog
 
 
 def find_ab(percentage):
@@ -101,10 +101,14 @@ class MediaPlanApp:
         self.root = root
         self.root.title("Media Plan Generator")
 
-        # Setup GUI elements
-        self.setup_gui()
+        # Initialize variables
+        self.ad_dur = []
+        self.ad_repeat = []
 
-    def setup_gui(self):
+        # Setup GUI elements
+        self.setup_initial_gui()
+
+    def setup_initial_gui(self):
         self.frame = tk.Frame(self.root, padx=10, pady=10)
         self.frame.pack(padx=10, pady=10)
 
@@ -123,22 +127,12 @@ class MediaPlanApp:
         self.ads_folder_entry.grid(row=2, column=1, padx=5, pady=5)
         tk.Button(self.frame, text="Browse", command=self.browse_ads_folder).grid(row=2, column=2, padx=5, pady=5)
 
-        tk.Label(self.frame, text="Ad Number:", anchor='w').grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.frame, text="Number of Advertisers:", anchor='w').grid(row=3, column=0, sticky=tk.W, padx=5,
+                                                                             pady=5)
         self.ad_number_entry = tk.Entry(self.frame, width=10)
         self.ad_number_entry.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
 
-        tk.Label(self.frame, text="Ad Durations (comma separated):", anchor='w').grid(row=4, column=0, sticky=tk.W,
-                                                                                      padx=5, pady=5)
-        self.ad_dur_entry = tk.Entry(self.frame, width=50)
-        self.ad_dur_entry.grid(row=4, column=1, padx=5, pady=5)
-
-        tk.Label(self.frame, text="Ad Repeats (comma separated):", anchor='w').grid(row=5, column=0, sticky=tk.W,
-                                                                                    padx=5, pady=5)
-        self.ad_repeat_entry = tk.Entry(self.frame, width=50)
-        self.ad_repeat_entry.grid(row=5, column=1, padx=5, pady=5)
-
-        tk.Button(self.frame, text="Generate Media Plan", command=self.generate_media_plan).grid(row=6, column=1,
-                                                                                                 pady=10)
+        tk.Button(self.frame, text="Next", command=self.setup_ad_inputs).grid(row=4, column=1, pady=10)
 
     def browse_music_folder(self):
         folder = filedialog.askdirectory()
@@ -158,21 +152,58 @@ class MediaPlanApp:
             self.ads_folder_entry.delete(0, tk.END)
             self.ads_folder_entry.insert(0, folder)
 
-    def generate_media_plan(self):
-        music_folder = self.music_folder_entry.get()
-        objects_file = self.objects_file_entry.get()
-        ads_folder = self.ads_folder_entry.get()
-        ad_number = int(self.ad_number_entry.get())
-        ad_dur = list(map(int, self.ad_dur_entry.get().split(',')))
-        ad_repeat = list(map(int, self.ad_repeat_entry.get().split(',')))
+    def setup_ad_inputs(self):
+        try:
+            self.ad_number = int(self.ad_number_entry.get())
+        except ValueError:
+            messagebox.showerror("Error", "Number of advertisers must be an integer.")
+            return
 
-        if not music_folder or not objects_file or not ads_folder:
+        self.music_folder = self.music_folder_entry.get()
+        self.objects_file = self.objects_file_entry.get()
+        self.ads_folder = self.ads_folder_entry.get()
+
+        if not self.music_folder or not self.objects_file or not self.ads_folder:
             messagebox.showerror("Error", "Please select all required folders and files.")
             return
 
-        if len(ad_dur) != ad_number or len(ad_repeat) != ad_number:
-            messagebox.showerror("Error", "Ad durations and repeats must match the ad number.")
-            return
+        self.ad_window = tk.Toplevel(self.root)
+        self.ad_window.title("Enter Ad Durations and Repeats")
+
+        tk.Label(self.ad_window, text="Ad Name").grid(row=0, column=0, padx=5, pady=5)
+        tk.Label(self.ad_window, text="Duration (seconds)").grid(row=0, column=1, padx=5, pady=5)
+        tk.Label(self.ad_window, text="Repeats").grid(row=0, column=2, padx=5, pady=5)
+
+        self.ad_entries = []
+
+        for i in range(self.ad_number):
+            ad_name_label = tk.Label(self.ad_window, text=f"Ad {i + 1}")
+            ad_name_label.grid(row=i + 1, column=0, padx=5, pady=5)
+
+            ad_dur_entry = tk.Entry(self.ad_window)
+            ad_dur_entry.grid(row=i + 1, column=1, padx=5, pady=5)
+
+            ad_repeat_entry = tk.Entry(self.ad_window)
+            ad_repeat_entry.grid(row=i + 1, column=2, padx=5, pady=5)
+
+            self.ad_entries.append((ad_dur_entry, ad_repeat_entry))
+
+        tk.Button(self.ad_window, text="Generate Media Plan", command=self.generate_media_plan).grid(
+            row=self.ad_number + 1, column=1, pady=10)
+
+    def generate_media_plan(self):
+        self.ad_dur = []
+        self.ad_repeat = []
+
+        for ad_dur_entry, ad_repeat_entry in self.ad_entries:
+            try:
+                ad_dur = int(ad_dur_entry.get())
+                ad_repeat = int(ad_repeat_entry.get())
+            except ValueError:
+                messagebox.showerror("Error", "Ad durations and repeats must be integers.")
+                return
+            self.ad_dur.append(ad_dur)
+            self.ad_repeat.append(ad_repeat)
 
         current_datetime = datetime.now().strftime("%Y-%m-%d %H-%M")
 
@@ -185,10 +216,10 @@ class MediaPlanApp:
         ad_name = []
 
         # Process music files
-        for x in os.listdir(music_folder):
+        for x in os.listdir(self.music_folder):
             filename = os.fsdecode(x)
             song_name.append(filename)
-            file_path = os.path.join(music_folder, filename)
+            file_path = os.path.join(self.music_folder, filename)
             try:
                 audio = File(file_path)
                 if audio and hasattr(audio, 'info'):
@@ -201,7 +232,7 @@ class MediaPlanApp:
                 song_dur.append(None)
 
         # Process object data
-        with open(objects_file, encoding='utf-8') as object_file:
+        with open(self.objects_file, encoding='utf-8') as object_file:
             object_data = json.load(object_file)
             for x in object_data['objects']:
                 object_name.append(x['Name'])
@@ -210,16 +241,16 @@ class MediaPlanApp:
 
         # Process ad data
         ad_count = 0
-        for x in os.listdir(ads_folder):
+        for x in os.listdir(self.ads_folder):
             filename = os.fsdecode(x)
             ad_name.append(filename)
             ad_count += 1
-            if ad_count == ad_number:
+            if ad_count == self.ad_number:
                 break
 
-        indeces, ad_repeat = sort_list(ad_repeat)
+        indeces, self.ad_repeat = sort_list(self.ad_repeat)
         ad_name = rearrange(indeces, ad_name)
-        ad_dur = rearrange(indeces, ad_dur)
+        self.ad_dur = rearrange(indeces, self.ad_dur)
 
         # Create workbook
         wb = openpyxl.Workbook()
@@ -227,7 +258,7 @@ class MediaPlanApp:
         for times in range(len(object_name)):
             index_20_start = len(ad_name)
             for i in range(len(ad_name)):
-                if ad_repeat[i] == 20:
+                if self.ad_repeat[i] == 20:
                     index_20_start = i
                     break
             index_20_end = len(ad_name)
@@ -240,7 +271,7 @@ class MediaPlanApp:
 
             ad_sum = 0
             for k in range(len(ad_name)):
-                ad_sum += ad_dur[k] * ad_repeat[k]
+                ad_sum += self.ad_dur[k] * self.ad_repeat[k]
                 percent = ad_sum / working_time
                 adlimit = find_ab(percent)
             block_period = 0
@@ -253,7 +284,7 @@ class MediaPlanApp:
 
             ad_uses = []
             ad_broadcast = []
-            for i in range(len(ad_repeat)):
+            for i in range(len(self.ad_repeat)):
                 ad_uses.append(0)
                 ad_broadcast.append(0)
             period = int((working_time - 20) / blocks)
@@ -281,7 +312,7 @@ class MediaPlanApp:
             ws["G2"] = "Повторы"
             ws["H2"] = "20:15:10:5"
             ws["G3"] = 'Продолжительность'
-            ws["H3"] = sum(ad_dur)
+            ws["H3"] = sum(self.ad_dur)
             ws["G4"] = "Загруженность"
             ws["H4"] = str(percent * 100) + '%'
             ws["G5"] = "Максимальный рекламный блок"
@@ -334,8 +365,8 @@ class MediaPlanApp:
                     block_start = cur_time
                     if (ad_block) % block_period == 1:
                         index_20 = index_20_start
-                    for i in range(len(ad_repeat)):
-                        if ad_repeat[i] == 5 and ad_uses[i] != ad_repeat[i]:
+                    for i in range(len(self.ad_repeat)):
+                        if self.ad_repeat[i] == 5 and ad_uses[i] != self.ad_repeat[i]:
                             if (ad_block % int(blocks / 5) == 1) or (ad_broadcast[i] == 1):
                                 if ads_in_block == adlimit:
                                     ad_broadcast[i] = 1
@@ -348,11 +379,11 @@ class MediaPlanApp:
                                 row_excel += 1
                                 ads_in_block += 1
                                 ad_uses[i] += 1
-                                timer += int(float(ad_dur[i])) + 1
-                                cur_time += int(float(ad_dur[i])) + 1
+                                timer += int(float(self.ad_dur[i])) + 1
+                                cur_time += int(float(self.ad_dur[i])) + 1
                                 continue
 
-                        if ad_repeat[i] == 10 and ad_uses[i] != ad_repeat[i]:
+                        if self.ad_repeat[i] == 10 and ad_uses[i] != self.ad_repeat[i]:
                             if (ad_block % int(blocks / 10) == 1) or (ad_broadcast[i] == 1):
                                 if ads_in_block == adlimit:
                                     ad_broadcast[i] = 1
@@ -365,11 +396,11 @@ class MediaPlanApp:
                                 row_excel += 1
                                 ads_in_block += 1
                                 ad_uses[i] += 1
-                                timer += int(float(ad_dur[i])) + 1
-                                cur_time += int(float(ad_dur[i])) + 1
+                                timer += int(float(self.ad_dur[i])) + 1
+                                cur_time += int(float(self.ad_dur[i])) + 1
                                 continue
 
-                        if ad_repeat[i] == 15 and ad_uses[i] != ad_repeat[i]:
+                        if self.ad_repeat[i] == 15 and ad_uses[i] != self.ad_repeat[i]:
                             if (ad_block % int(blocks / 15) == 1) or (ad_broadcast[i] == 1):
                                 if ads_in_block == adlimit:
                                     ad_broadcast[i] = 1
@@ -382,11 +413,11 @@ class MediaPlanApp:
                                 row_excel += 1
                                 ads_in_block += 1
                                 ad_uses[i] += 1
-                                timer += int(float(ad_dur[i])) + 1
-                                cur_time += int(float(ad_dur[i])) + 1
+                                timer += int(float(self.ad_dur[i])) + 1
+                                cur_time += int(float(self.ad_dur[i])) + 1
                                 continue
 
-                        if ad_repeat[i] == 20 and ad_uses[i] != ad_repeat[i]:
+                        if self.ad_repeat[i] == 20 and ad_uses[i] != self.ad_repeat[i]:
                             if (ads_in_block == adlimit or i != index_20):
                                 continue
                             ws["A" + str(row_excel)] = ad_name[i]
@@ -397,8 +428,8 @@ class MediaPlanApp:
                             ads_in_block += 1
                             ad_uses[i] += 1
                             index_20 += 1
-                            timer += int(float(ad_dur[i])) + 1
-                            cur_time += int(float(ad_dur[i])) + 1
+                            timer += int(float(self.ad_dur[i])) + 1
+                            cur_time += int(float(self.ad_dur[i])) + 1
                             continue
 
                     col = "C"
@@ -418,7 +449,7 @@ class MediaPlanApp:
 
             ws.column_dimensions['A'].width = 66
 
-        filename = f"Медиаплан {ad_number} реклам 20,15,10,5 повторов {sum(ad_dur)} сек {current_datetime}.xlsx"
+        filename = f"Медиаплан {self.ad_number} реклам 20,15,10,5 повторов {sum(self.ad_dur)} сек {current_datetime}.xlsx"
 
         del wb['Sheet']
         wb.save(filename)
