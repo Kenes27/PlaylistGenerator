@@ -104,6 +104,7 @@ class MediaPlanApp:
         # Initialize variables
         self.ad_dur = []
         self.ad_repeat = []
+        self.ad_name = []
 
         # Setup GUI elements
         self.setup_initial_gui()
@@ -167,6 +168,15 @@ class MediaPlanApp:
             messagebox.showerror("Error", "Please select all required folders and files.")
             return
 
+        # Process ad data
+        ad_count = 0
+        for x in os.listdir(self.ads_folder):
+            filename = os.fsdecode(x)
+            self.ad_name.append(filename)
+            ad_count += 1
+            if ad_count == self.ad_number:
+                break
+
         self.ad_window = tk.Toplevel(self.root)
         self.ad_window.title("Enter Ad Durations and Repeats")
 
@@ -177,7 +187,7 @@ class MediaPlanApp:
         self.ad_entries = []
 
         for i in range(self.ad_number):
-            ad_name_label = tk.Label(self.ad_window, text=f"Ad {i + 1}")
+            ad_name_label = tk.Label(self.ad_window, text=self.ad_name[i])
             ad_name_label.grid(row=i + 1, column=0, padx=5, pady=5)
 
             ad_dur_entry = tk.Entry(self.ad_window)
@@ -213,7 +223,6 @@ class MediaPlanApp:
         object_name = []
         object_time1 = []
         object_time2 = []
-        ad_name = []
 
         # Process music files
         for x in os.listdir(self.music_folder):
@@ -239,29 +248,20 @@ class MediaPlanApp:
                 object_time1.append(hour_to_seconds(x['time1']))
                 object_time2.append(hour_to_seconds(x['time2']))
 
-        # Process ad data
-        ad_count = 0
-        for x in os.listdir(self.ads_folder):
-            filename = os.fsdecode(x)
-            ad_name.append(filename)
-            ad_count += 1
-            if ad_count == self.ad_number:
-                break
-
         indeces, self.ad_repeat = sort_list(self.ad_repeat)
-        ad_name = rearrange(indeces, ad_name)
+        self.ad_name = rearrange(indeces, self.ad_name)
         self.ad_dur = rearrange(indeces, self.ad_dur)
 
         # Create workbook
         wb = openpyxl.Workbook()
 
         for times in range(len(object_name)):
-            index_20_start = len(ad_name)
-            for i in range(len(ad_name)):
+            index_20_start = len(self.ad_name)
+            for i in range(len(self.ad_name)):
                 if self.ad_repeat[i] == 20:
                     index_20_start = i
                     break
-            index_20_end = len(ad_name)
+            index_20_end = len(self.ad_name)
             index_20 = index_20_start
 
             if object_time2[times] < object_time1[times]:
@@ -270,15 +270,15 @@ class MediaPlanApp:
                 working_time = object_time2[times] - object_time1[times]
 
             ad_sum = 0
-            for k in range(len(ad_name)):
+            for k in range(len(self.ad_name)):
                 ad_sum += self.ad_dur[k] * self.ad_repeat[k]
                 percent = ad_sum / working_time
                 adlimit = find_ab(percent)
             block_period = 0
-            if len(ad_name) % adlimit == 0:
-                block_period = len(ad_name) / adlimit
+            if len(self.ad_name) % adlimit == 0:
+                block_period = len(self.ad_name) / adlimit
             else:
-                block_period = int(len(ad_name) / adlimit) + 1
+                block_period = int(len(self.ad_name) / adlimit) + 1
 
             blocks = block_period * 20
 
@@ -308,7 +308,7 @@ class MediaPlanApp:
             ws['C1'] = "Время"
             ws["D1"] = str(int(working_time / 3600)) + ' часа'
             ws["G1"] = 'Реклама'
-            ws["H1"] = len(ad_name)
+            ws["H1"] = len(self.ad_name)
             ws["G2"] = "Повторы"
             ws["H2"] = "20:15:10:5"
             ws["G3"] = 'Продолжительность'
@@ -372,7 +372,7 @@ class MediaPlanApp:
                                     ad_broadcast[i] = 1
                                     continue
                                 ad_broadcast[i] = 0
-                                ws["A" + str(row_excel)] = ad_name[i]
+                                ws["A" + str(row_excel)] = self.ad_name[i]
                                 ws["B" + str(row_excel)] = sec_to_hour(cur_time)
                                 ws['A' + str(row_excel)].fill = colors[cur_color]
                                 ws['B' + str(row_excel)].fill = colors[cur_color]
@@ -389,7 +389,7 @@ class MediaPlanApp:
                                     ad_broadcast[i] = 1
                                     continue
                                 ad_broadcast[i] = 0
-                                ws["A" + str(row_excel)] = ad_name[i]
+                                ws["A" + str(row_excel)] = self.ad_name[i]
                                 ws["B" + str(row_excel)] = sec_to_hour(cur_time)
                                 ws['A' + str(row_excel)].fill = colors[cur_color]
                                 ws['B' + str(row_excel)].fill = colors[cur_color]
@@ -406,7 +406,7 @@ class MediaPlanApp:
                                     ad_broadcast[i] = 1
                                     continue
                                 ad_broadcast[i] = 0
-                                ws["A" + str(row_excel)] = ad_name[i]
+                                ws["A" + str(row_excel)] = self.ad_name[i]
                                 ws["B" + str(row_excel)] = sec_to_hour(cur_time)
                                 ws['A' + str(row_excel)].fill = colors[cur_color]
                                 ws['B' + str(row_excel)].fill = colors[cur_color]
@@ -420,7 +420,7 @@ class MediaPlanApp:
                         if self.ad_repeat[i] == 20 and ad_uses[i] != self.ad_repeat[i]:
                             if (ads_in_block == adlimit or i != index_20):
                                 continue
-                            ws["A" + str(row_excel)] = ad_name[i]
+                            ws["A" + str(row_excel)] = self.ad_name[i]
                             ws["B" + str(row_excel)] = sec_to_hour(cur_time)
                             ws['A' + str(row_excel)].fill = colors[cur_color]
                             ws['B' + str(row_excel)].fill = colors[cur_color]
@@ -444,7 +444,7 @@ class MediaPlanApp:
             ws.append([''])
             ws.append([''])
             ws.append(['Повторов за день'])
-            for row in zip(ad_uses, ad_name):
+            for row in zip(ad_uses, self.ad_name):
                 ws.append(row)
 
             ws.column_dimensions['A'].width = 66
