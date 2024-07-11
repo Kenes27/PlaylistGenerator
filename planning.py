@@ -5,34 +5,26 @@ import openpyxl
 from datetime import datetime
 from openpyxl.styles import PatternFill
 from mutagen import File
-
-# Move to the correct directory
-os.chdir(r"File")
-current_datetime = datetime.now().strftime("%Y-%m-%d %H-%M")
-
-# Function to find the ad block
+import tkinter as tk
+from tkinter import filedialog, messagebox
 
 
 def find_ab(percentage):
-    global adblock
-
     if percentage == 0:
-        adblock = 0
+        return 0
     elif 0.05 >= percentage > 0:
-        adblock = 1
+        return 1
     elif 0.14 >= percentage > 0.05:
-        adblock = 2
+        return 2
     elif 0.19 >= percentage > 0.14:
-        adblock = 3
+        return 3
     elif 1 >= percentage > 0.14:
-        adblock = 4
+        return 4
     else:
         print("too much")
+        return -1
 
-    return adblock
 
-
-# Convert hour format to seconds
 def hour_to_seconds(time):
     a = 0
     b = ''
@@ -48,7 +40,6 @@ def hour_to_seconds(time):
     return a
 
 
-# Convert seconds to hour format
 def sec_to_hour(time):
     a = int(time / 3600)
     b = ''
@@ -72,7 +63,6 @@ def sec_to_hour(time):
     return b
 
 
-# Sort the list
 def sort_list(repeat):
     pos = 0
     iter = 0
@@ -99,7 +89,6 @@ def sort_list(repeat):
     return arr_llst, repeat
 
 
-# Rearrange the list based on indices
 def rearrange(index, lists):
     new_list = []
     for i in range(len(index)):
@@ -107,265 +96,336 @@ def rearrange(index, lists):
     return new_list
 
 
-# Initialize variables
-song_name = []
-song_dur = []
-object_name = []
-object_time1 = []
-object_time2 = []
-ad_name = []
-ad_dur = []
-ad_repeat = []
+class MediaPlanApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Media Plan Generator")
 
-# Process music files
-music = r'music'
-for x in os.listdir(music):
-    filename = os.fsdecode(x)
-    song_name.append(filename)
-    file_path = os.path.join(music, filename)
-    try:
-        audio = File(file_path)
-        if audio and hasattr(audio, 'info'):
-            duration = audio.info.length
-            song_dur.append(duration)
-        else:
-            song_dur.append(None)
-    except Exception as e:
-        print(f"Error processing file {filename}: {e}")
-        song_dur.append(None)
+        # Setup GUI elements
+        self.setup_gui()
 
-# Process object data
-object_file = open(r'objects.json', encoding='utf-8')
-object_data = json.load(object_file)
-for x in object_data['objects']:
-    object_name.append(x['Name'])
-    object_time1.append(hour_to_seconds(x['time1']))
-    object_time2.append(hour_to_seconds(x['time2']))
+    def setup_gui(self):
+        self.frame = tk.Frame(self.root, padx=10, pady=10)
+        self.frame.pack(padx=10, pady=10)
 
-# Process ad data
-ad_number = 14
-ad_count = 0
-ad = r'ad'
-for x in os.listdir(ad):
-    filename = os.fsdecode(x)
-    ad_name.append(filename)
-    ad_count += 1
-    if ad_count == ad_number:
-        break
+        tk.Label(self.frame, text="Music Folder:", anchor='w').grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        self.music_folder_entry = tk.Entry(self.frame, width=50)
+        self.music_folder_entry.grid(row=0, column=1, padx=5, pady=5)
+        tk.Button(self.frame, text="Browse", command=self.browse_music_folder).grid(row=0, column=2, padx=5, pady=5)
 
-all_dur = 30
-ad_dur = [30, 26, 39, 24, 29, 36, 33, 20, 36, 34, 22, 28, 31, 34, 29, 26, 27, 19, 35, 25, 31, 32, 26, 28, 30, 25, 29,
-          27, 34, 36, 37, 34, 38]
+        tk.Label(self.frame, text="Objects File:", anchor='w').grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
+        self.objects_file_entry = tk.Entry(self.frame, width=50)
+        self.objects_file_entry.grid(row=1, column=1, padx=5, pady=5)
+        tk.Button(self.frame, text="Browse", command=self.browse_objects_file).grid(row=1, column=2, padx=5, pady=5)
 
-ad_repeat = [15, 20, 20, 20, 10, 20, 15, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 15, 5, 20, 15, 20, 20, 5, 20, 20,
-             20, 20, 20, 15, 5, 20]
+        tk.Label(self.frame, text="Ads Folder:", anchor='w').grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
+        self.ads_folder_entry = tk.Entry(self.frame, width=50)
+        self.ads_folder_entry.grid(row=2, column=1, padx=5, pady=5)
+        tk.Button(self.frame, text="Browse", command=self.browse_ads_folder).grid(row=2, column=2, padx=5, pady=5)
 
-ad_repeat = ad_repeat[0:ad_number]
+        tk.Label(self.frame, text="Ad Number:", anchor='w').grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
+        self.ad_number_entry = tk.Entry(self.frame, width=10)
+        self.ad_number_entry.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
 
-indeces, ad_repeat = sort_list(ad_repeat)
-ad_name = rearrange(indeces, ad_name)
-ad_dur = rearrange(indeces, ad_dur)
+        tk.Label(self.frame, text="Ad Durations (comma separated):", anchor='w').grid(row=4, column=0, sticky=tk.W,
+                                                                                      padx=5, pady=5)
+        self.ad_dur_entry = tk.Entry(self.frame, width=50)
+        self.ad_dur_entry.grid(row=4, column=1, padx=5, pady=5)
 
-# Create workbook
-wb = openpyxl.Workbook()
+        tk.Label(self.frame, text="Ad Repeats (comma separated):", anchor='w').grid(row=5, column=0, sticky=tk.W,
+                                                                                    padx=5, pady=5)
+        self.ad_repeat_entry = tk.Entry(self.frame, width=50)
+        self.ad_repeat_entry.grid(row=5, column=1, padx=5, pady=5)
 
-for times in range(len(object_name)):
-    index_20_start = len(ad_name)
-    for i in range(len(ad_name)):
-        if ad_repeat[i] == 20:
-            index_20_start = i
-            break
-    index_20_end = len(ad_name)
-    index_20 = index_20_start
+        tk.Button(self.frame, text="Generate Media Plan", command=self.generate_media_plan).grid(row=6, column=1,
+                                                                                                 pady=10)
 
-    if object_time2[times] < object_time1[times]:
-        working_time = 86400 + object_time2[times] - object_time1[times]
-    else:
-        working_time = object_time2[times] - object_time1[times]
+    def browse_music_folder(self):
+        folder = filedialog.askdirectory()
+        if folder:
+            self.music_folder_entry.delete(0, tk.END)
+            self.music_folder_entry.insert(0, folder)
 
-    ad_sum = 0
-    for k in range(len(ad_name)):
-        ad_sum += ad_dur[k] * ad_repeat[k]
-        percent = ad_sum / working_time
-        adlimit = find_ab(percent)
-    block_period = 0
-    if len(ad_name) % adlimit == 0:
-        block_period = len(ad_name) / adlimit
-    else:
-        block_period = int(len(ad_name) / adlimit) + 1
+    def browse_objects_file(self):
+        file = filedialog.askopenfilename(filetypes=[("JSON files", "*.json")])
+        if file:
+            self.objects_file_entry.delete(0, tk.END)
+            self.objects_file_entry.insert(0, file)
 
-    blocks = block_period * 20
+    def browse_ads_folder(self):
+        folder = filedialog.askdirectory()
+        if folder:
+            self.ads_folder_entry.delete(0, tk.END)
+            self.ads_folder_entry.insert(0, folder)
 
-    ad_uses = []
-    ad_broadcast = []
-    for i in range(len(ad_repeat)):
-        ad_uses.append(0)
-        ad_broadcast.append(0)
-    period = int((working_time - 20) / blocks)
-    cur_time = object_time1[times]
-    ad_start = object_time1[times] + period - 120
-    cur_block = False
-    ad_block = 1
-    ads_in_block = 0
-    timer = 0
-    timestamps = []
-    block_start = ''
-    end_time = 0
-    if object_time2[times] < object_time1[times]:
-        end_time = 86400 + object_time2[times]
-    else:
-        end_time = object_time2[times]
+    def generate_media_plan(self):
+        music_folder = self.music_folder_entry.get()
+        objects_file = self.objects_file_entry.get()
+        ads_folder = self.ads_folder_entry.get()
+        ad_number = int(self.ad_number_entry.get())
+        ad_dur = list(map(int, self.ad_dur_entry.get().split(',')))
+        ad_repeat = list(map(int, self.ad_repeat_entry.get().split(',')))
 
-    wb.create_sheet(str(int(working_time / 3600)))
-    ws = wb[str(int(working_time / 3600))]
-    ws["A1"] = "Имя"
-    ws['C1'] = "Время"
-    ws["D1"] = str(int(working_time / 3600)) + ' часа'
-    ws["G1"] = 'Реклама'
-    ws["H1"] = len(ad_name)
-    ws["G2"] = "Повторы"
-    ws["H2"] = "20:15:10:5"
-    ws["G3"] = 'Продолжительность'
-    ws["H3"] = all_dur
-    ws["G4"] = "Загруженность"
-    ws["H4"] = str(percent * 100) + '%'
-    ws["G5"] = "Максимальный рекламный блок"
-    ws["H5"] = adlimit
+        if not music_folder or not objects_file or not ads_folder:
+            messagebox.showerror("Error", "Please select all required folders and files.")
+            return
 
-    row_excel = 2
-    colors = []
-    green = PatternFill(patternType='solid',
-                        fgColor='78D542')
-    colors.append(green)
-    yellow = PatternFill(patternType='solid',
-                         fgColor='FFC638')
-    colors.append(yellow)
-    cur_color = 1
+        if len(ad_dur) != ad_number or len(ad_repeat) != ad_number:
+            messagebox.showerror("Error", "Ad durations and repeats must match the ad number.")
+            return
 
-    while cur_time < end_time:
-        block_start = cur_time
-        while cur_block == False:
-            cur_color = 1
-            if cur_time > ad_start:
-                if int(ad_start) - block_start < 0:
-                    col = "C"
-                    while ws[col + str(row_excel - 1)].value is not None:
-                        col = chr(ord(col) + 1)
-                    ws[col + str(row_excel - 1)] = "00:00:00"
-                    ws[chr(ord(col) + 1) + str(row_excel - 1)] = "Музыка"
+        current_datetime = datetime.now().strftime("%Y-%m-%d %H-%M")
+
+        # Initialize variables
+        song_name = []
+        song_dur = []
+        object_name = []
+        object_time1 = []
+        object_time2 = []
+        ad_name = []
+
+        # Process music files
+        for x in os.listdir(music_folder):
+            filename = os.fsdecode(x)
+            song_name.append(filename)
+            file_path = os.path.join(music_folder, filename)
+            try:
+                audio = File(file_path)
+                if audio and hasattr(audio, 'info'):
+                    duration = audio.info.length
+                    song_dur.append(duration)
                 else:
-                    cur_time = ad_start
+                    song_dur.append(None)
+            except Exception as e:
+                print(f"Error processing file {filename}: {e}")
+                song_dur.append(None)
+
+        # Process object data
+        with open(objects_file, encoding='utf-8') as object_file:
+            object_data = json.load(object_file)
+            for x in object_data['objects']:
+                object_name.append(x['Name'])
+                object_time1.append(hour_to_seconds(x['time1']))
+                object_time2.append(hour_to_seconds(x['time2']))
+
+        # Process ad data
+        ad_count = 0
+        for x in os.listdir(ads_folder):
+            filename = os.fsdecode(x)
+            ad_name.append(filename)
+            ad_count += 1
+            if ad_count == ad_number:
+                break
+
+        indeces, ad_repeat = sort_list(ad_repeat)
+        ad_name = rearrange(indeces, ad_name)
+        ad_dur = rearrange(indeces, ad_dur)
+
+        # Create workbook
+        wb = openpyxl.Workbook()
+
+        for times in range(len(object_name)):
+            index_20_start = len(ad_name)
+            for i in range(len(ad_name)):
+                if ad_repeat[i] == 20:
+                    index_20_start = i
+                    break
+            index_20_end = len(ad_name)
+            index_20 = index_20_start
+
+            if object_time2[times] < object_time1[times]:
+                working_time = 86400 + object_time2[times] - object_time1[times]
+            else:
+                working_time = object_time2[times] - object_time1[times]
+
+            ad_sum = 0
+            for k in range(len(ad_name)):
+                ad_sum += ad_dur[k] * ad_repeat[k]
+                percent = ad_sum / working_time
+                adlimit = find_ab(percent)
+            block_period = 0
+            if len(ad_name) % adlimit == 0:
+                block_period = len(ad_name) / adlimit
+            else:
+                block_period = int(len(ad_name) / adlimit) + 1
+
+            blocks = block_period * 20
+
+            ad_uses = []
+            ad_broadcast = []
+            for i in range(len(ad_repeat)):
+                ad_uses.append(0)
+                ad_broadcast.append(0)
+            period = int((working_time - 20) / blocks)
+            cur_time = object_time1[times]
+            ad_start = object_time1[times] + period - 120
+            cur_block = False
+            ad_block = 1
+            ads_in_block = 0
+            timer = 0
+            timestamps = []
+            block_start = ''
+            end_time = 0
+            if object_time2[times] < object_time1[times]:
+                end_time = 86400 + object_time2[times]
+            else:
+                end_time = object_time2[times]
+
+            wb.create_sheet(str(int(working_time / 3600)))
+            ws = wb[str(int(working_time / 3600))]
+            ws["A1"] = "Имя"
+            ws['C1'] = "Время"
+            ws["D1"] = str(int(working_time / 3600)) + ' часа'
+            ws["G1"] = 'Реклама'
+            ws["H1"] = len(ad_name)
+            ws["G2"] = "Повторы"
+            ws["H2"] = "20:15:10:5"
+            ws["G3"] = 'Продолжительность'
+            ws["H3"] = sum(ad_dur)
+            ws["G4"] = "Загруженность"
+            ws["H4"] = str(percent * 100) + '%'
+            ws["G5"] = "Максимальный рекламный блок"
+            ws["H5"] = adlimit
+
+            row_excel = 2
+            colors = []
+            green = PatternFill(patternType='solid', fgColor='78D542')
+            colors.append(green)
+            yellow = PatternFill(patternType='solid', fgColor='FFC638')
+            colors.append(yellow)
+            cur_color = 1
+
+            while cur_time < end_time:
+                block_start = cur_time
+                while cur_block == False:
+                    cur_color = 1
+                    if cur_time > ad_start:
+                        if int(ad_start) - block_start < 0:
+                            col = "C"
+                            while ws[col + str(row_excel - 1)].value is not None:
+                                col = chr(ord(col) + 1)
+                            ws[col + str(row_excel - 1)] = "00:00:00"
+                            ws[chr(ord(col) + 1) + str(row_excel - 1)] = "Музыка"
+                        else:
+                            cur_time = ad_start
+                            col = "C"
+                            while ws[col + str(row_excel - 1)].value is not None:
+                                col = chr(ord(col) + 1)
+                            ws[col + str(row_excel - 1)] = sec_to_hour(int(cur_time) - block_start)
+                            ws[chr(ord(col) + 1) + str(row_excel - 1)] = "Музыка"
+                        ad_start += period
+                        cur_block = True
+                        continue
+                    rand_int = random.randint(0, len(song_name) - 1)
+                    ws["A" + str(row_excel)] = song_name[rand_int]
+                    ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+
+                    ws['A' + str(row_excel)].fill = colors[cur_color]
+                    ws['B' + str(row_excel)].fill = colors[cur_color]
+                    row_excel += 1
+                    cur_time += int(float(song_dur[rand_int])) + 1
+
+                while cur_block == True:
+                    cur_color = 0
+                    if (ad_block - 1) == blocks:
+                        cur_block = False
+                        continue
+                    timer = 0
+                    block_start = cur_time
+                    if (ad_block) % block_period == 1:
+                        index_20 = index_20_start
+                    for i in range(len(ad_repeat)):
+                        if ad_repeat[i] == 5 and ad_uses[i] != ad_repeat[i]:
+                            if (ad_block % int(blocks / 5) == 1) or (ad_broadcast[i] == 1):
+                                if ads_in_block == adlimit:
+                                    ad_broadcast[i] = 1
+                                    continue
+                                ad_broadcast[i] = 0
+                                ws["A" + str(row_excel)] = ad_name[i]
+                                ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+                                ws['A' + str(row_excel)].fill = colors[cur_color]
+                                ws['B' + str(row_excel)].fill = colors[cur_color]
+                                row_excel += 1
+                                ads_in_block += 1
+                                ad_uses[i] += 1
+                                timer += int(float(ad_dur[i])) + 1
+                                cur_time += int(float(ad_dur[i])) + 1
+                                continue
+
+                        if ad_repeat[i] == 10 and ad_uses[i] != ad_repeat[i]:
+                            if (ad_block % int(blocks / 10) == 1) or (ad_broadcast[i] == 1):
+                                if ads_in_block == adlimit:
+                                    ad_broadcast[i] = 1
+                                    continue
+                                ad_broadcast[i] = 0
+                                ws["A" + str(row_excel)] = ad_name[i]
+                                ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+                                ws['A' + str(row_excel)].fill = colors[cur_color]
+                                ws['B' + str(row_excel)].fill = colors[cur_color]
+                                row_excel += 1
+                                ads_in_block += 1
+                                ad_uses[i] += 1
+                                timer += int(float(ad_dur[i])) + 1
+                                cur_time += int(float(ad_dur[i])) + 1
+                                continue
+
+                        if ad_repeat[i] == 15 and ad_uses[i] != ad_repeat[i]:
+                            if (ad_block % int(blocks / 15) == 1) or (ad_broadcast[i] == 1):
+                                if ads_in_block == adlimit:
+                                    ad_broadcast[i] = 1
+                                    continue
+                                ad_broadcast[i] = 0
+                                ws["A" + str(row_excel)] = ad_name[i]
+                                ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+                                ws['A' + str(row_excel)].fill = colors[cur_color]
+                                ws['B' + str(row_excel)].fill = colors[cur_color]
+                                row_excel += 1
+                                ads_in_block += 1
+                                ad_uses[i] += 1
+                                timer += int(float(ad_dur[i])) + 1
+                                cur_time += int(float(ad_dur[i])) + 1
+                                continue
+
+                        if ad_repeat[i] == 20 and ad_uses[i] != ad_repeat[i]:
+                            if (ads_in_block == adlimit or i != index_20):
+                                continue
+                            ws["A" + str(row_excel)] = ad_name[i]
+                            ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+                            ws['A' + str(row_excel)].fill = colors[cur_color]
+                            ws['B' + str(row_excel)].fill = colors[cur_color]
+                            row_excel += 1
+                            ads_in_block += 1
+                            ad_uses[i] += 1
+                            index_20 += 1
+                            timer += int(float(ad_dur[i])) + 1
+                            cur_time += int(float(ad_dur[i])) + 1
+                            continue
+
                     col = "C"
                     while ws[col + str(row_excel - 1)].value is not None:
                         col = chr(ord(col) + 1)
                     ws[col + str(row_excel - 1)] = sec_to_hour(int(cur_time) - block_start)
-                    ws[chr(ord(col) + 1) + str(row_excel - 1)] = "Музыка"
-                ad_start += period
-                cur_block = True
-                continue
-            rand_int = random.randint(0, len(song_name) - 1)
-            ws["A" + str(row_excel)] = song_name[rand_int]
-            ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+                    ws[chr(ord(col) + 1) + str(row_excel - 1)] = "Реклама"
+                    ads_in_block = 0
+                    ad_block += 1
+                    cur_block = False
 
-            ws['A' + str(row_excel)].fill = colors[cur_color]
-            ws['B' + str(row_excel)].fill = colors[cur_color]
-            row_excel += 1
-            cur_time += int(float(song_dur[rand_int])) + 1
+            ws.append([''])
+            ws.append([''])
+            ws.append(['Повторов за день'])
+            for row in zip(ad_uses, ad_name):
+                ws.append(row)
 
-        while cur_block == True:
-            cur_color = 0
-            if (ad_block - 1) == blocks:
-                cur_block = False
-                continue
-            timer = 0
-            block_start = cur_time
-            if (ad_block) % block_period == 1:
-                index_20 = index_20_start
-            for i in range(len(ad_repeat)):
-                if ad_repeat[i] == 5 and ad_uses[i] != ad_repeat[i]:
-                    if (ad_block % int(blocks / 5) == 1) or (ad_broadcast[i] == 1):
-                        if ads_in_block == adlimit:
-                            ad_broadcast[i] = 1
-                            continue
-                        ad_broadcast[i] = 0
-                        ws["A" + str(row_excel)] = ad_name[i]
-                        ws["B" + str(row_excel)] = sec_to_hour(cur_time)
-                        ws['A' + str(row_excel)].fill = colors[cur_color]
-                        ws['B' + str(row_excel)].fill = colors[cur_color]
-                        row_excel += 1
-                        ads_in_block += 1
-                        ad_uses[i] += 1
-                        timer += int(float(ad_dur[i])) + 1
-                        cur_time += int(float(ad_dur[i])) + 1
-                        continue
+            ws.column_dimensions['A'].width = 66
 
-                if ad_repeat[i] == 10 and ad_uses[i] != ad_repeat[i]:
-                    if (ad_block % int(blocks / 10) == 1) or (ad_broadcast[i] == 1):
-                        if ads_in_block == adlimit:
-                            ad_broadcast[i] = 1
-                            continue
-                        ad_broadcast[i] = 0
-                        ws["A" + str(row_excel)] = ad_name[i]
-                        ws["B" + str(row_excel)] = sec_to_hour(cur_time)
-                        ws['A' + str(row_excel)].fill = colors[cur_color]
-                        ws['B' + str(row_excel)].fill = colors[cur_color]
-                        row_excel += 1
-                        ads_in_block += 1
-                        ad_uses[i] += 1
-                        timer += int(float(ad_dur[i])) + 1
-                        cur_time += int(float(ad_dur[i])) + 1
-                        continue
+        filename = f"Медиаплан {ad_number} реклам 20,15,10,5 повторов {sum(ad_dur)} сек {current_datetime}.xlsx"
 
-                if ad_repeat[i] == 15 and ad_uses[i] != ad_repeat[i]:
-                    if (ad_block % int(blocks / 15) == 1) or (ad_broadcast[i] == 1):
-                        if ads_in_block == adlimit:
-                            ad_broadcast[i] = 1
-                            continue
-                        ad_broadcast[i] = 0
-                        ws["A" + str(row_excel)] = ad_name[i]
-                        ws["B" + str(row_excel)] = sec_to_hour(cur_time)
-                        ws['A' + str(row_excel)].fill = colors[cur_color]
-                        ws['B' + str(row_excel)].fill = colors[cur_color]
-                        row_excel += 1
-                        ads_in_block += 1
-                        ad_uses[i] += 1
-                        timer += int(float(ad_dur[i])) + 1
-                        cur_time += int(float(ad_dur[i])) + 1
-                        continue
+        del wb['Sheet']
+        wb.save(filename)
+        messagebox.showinfo("Success", f"Media plan generated successfully and saved as {filename}!")
 
-                if ad_repeat[i] == 20 and ad_uses[i] != ad_repeat[i]:
-                    if (ads_in_block == adlimit or i != index_20):
-                        continue
-                    ws["A" + str(row_excel)] = ad_name[i]
-                    ws["B" + str(row_excel)] = sec_to_hour(cur_time)
-                    ws['A' + str(row_excel)].fill = colors[cur_color]
-                    ws['B' + str(row_excel)].fill = colors[cur_color]
-                    row_excel += 1
-                    ads_in_block += 1
-                    ad_uses[i] += 1
-                    index_20 += 1
-                    timer += int(float(ad_dur[i])) + 1
-                    cur_time += int(float(ad_dur[i])) + 1
-                    continue
 
-            col = "C"
-            while ws[col + str(row_excel - 1)].value is not None:
-                col = chr(ord(col) + 1)
-            ws[col + str(row_excel - 1)] = sec_to_hour(int(cur_time) - block_start)
-            ws[chr(ord(col) + 1) + str(row_excel - 1)] = "Реклама"
-            ads_in_block = 0
-            ad_block += 1
-            cur_block = False
-
-    ws.append([''])
-    ws.append([''])
-    ws.append(['Повторов за день'])
-    for row in zip(ad_uses, ad_name):
-        ws.append(row)
-
-    ws.column_dimensions['A'].width = 66
-
-filename = f"Медиаплан {ad_number} реклам 20,15,10,5 повторов {all_dur} сек {current_datetime}.xlsx"
-
-del wb['Sheet']
-wb.save(filename)
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = MediaPlanApp(root)
+    root.mainloop()
