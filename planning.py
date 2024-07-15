@@ -111,7 +111,6 @@ class MediaPlanApp:
         self.setup_initial_gui()
 
     def setup_initial_gui(self):
-        
         self.frame = tk.Frame(self.root, padx=10, pady=10)
         self.frame.pack(padx=10, pady=10)
 
@@ -130,12 +129,22 @@ class MediaPlanApp:
 
         tk.Button(self.frame, text="Добавить рекламу", command=self.add_advertisement).grid(row=3, column=1, pady=10)
 
-        self.ad_frame = tk.Frame(self.root, padx=10, pady=10)
-        self.ad_frame.pack(padx=10, pady=10)
+        # Create a canvas for scrolling
+        self.canvas = Canvas(self.root, borderwidth=0, width=500, height=300)
+        self.ad_frame = tk.Frame(self.canvas, padx=10, pady=10)
+        self.scrollbar = Scrollbar(self.root, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        self.scrollbar.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.canvas.create_window((4, 4), window=self.ad_frame, anchor="nw", tags="self.ad_frame")
+
+        self.ad_frame.bind("<Configure>", lambda event, canvas=self.canvas: self.on_frame_configure(canvas))
 
         tk.Button(self.ad_frame, text="Сгенерировать медиаплан", command=self.generate_media_plan).pack(pady=10)
 
-        
+    def on_frame_configure(self, canvas):
+        canvas.configure(scrollregion=canvas.bbox("all"))
 
     def browse_music_files(self):
         files = filedialog.askopenfilenames(filetypes=[("Audio files", "*.mp3 *.wav *.flac *.m4a *.ogg")])
