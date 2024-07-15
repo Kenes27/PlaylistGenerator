@@ -7,6 +7,7 @@ from mutagen import File
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from tkinter import *
+from pydub import AudioSegment
 
 def find_ab(percentage):
     if percentage == 0:
@@ -157,9 +158,9 @@ class MediaPlanApp:
         ad_file_entry.grid(row=0, column=1, padx=5, pady=5)
         tk.Button(ad_frame, text="Обзор", command=lambda: self.browse_ad_file(ad_file_entry)).grid(row=0, column=2, padx=5, pady=5)
 
-        tk.Label(ad_frame, text="Продолжительность (секунды):").grid(row=1, column=0, padx=5, pady=5)
-        ad_dur_entry = tk.Entry(ad_frame, width=10)
-        ad_dur_entry.grid(row=1, column=1, padx=5, pady=5)
+        #tk.Label(ad_frame, text="Продолжительность (секунды):").grid(row=1, column=0, padx=5, pady=5)
+        #ad_dur_entry = tk.Entry(ad_frame, width=10)
+        #ad_dur_entry.grid(row=1, column=1, padx=5, pady=5)
 
         tk.Label(ad_frame, text="Повторы:").grid(row=2, column=0, padx=5, pady=5)
         ad_repeat_entry = ttk.Combobox(ad_frame, values=["20", "15", "10", "5"])
@@ -167,7 +168,7 @@ class MediaPlanApp:
         ad_repeat_entry.grid(row=2, column=1, padx=5, pady=5)
 
         self.ad_files.append(ad_file_entry)
-        self.ad_dur.append(ad_dur_entry)
+        #self.ad_dur.append(ad_dur_entry)
         self.ad_repeat.append(ad_repeat_entry)
 
     def browse_ad_file(self, ad_file_entry):
@@ -181,10 +182,10 @@ class MediaPlanApp:
         ad_repeats = []
         ad_names = []
 
-        for ad_file_entry, ad_dur_entry, ad_repeat_entry in zip(self.ad_files, self.ad_dur, self.ad_repeat):
+        for ad_file_entry, ad_repeat_entry in zip(self.ad_files, self.ad_repeat):
             ad_file = ad_file_entry.get()
             ad_name = os.path.basename(ad_file)
-            ad_dur = ad_dur_entry.get()
+            ad_dur = AudioSegment.from_file(ad_file).duration_seconds
             ad_repeat = ad_repeat_entry.get()
 
             if not ad_file or not ad_dur or not ad_repeat:
@@ -269,7 +270,7 @@ class MediaPlanApp:
         else:
             block_period = int(len(self.ad_name) / adlimit) + 1
 
-        blocks = block_period * 20
+        blocks = int(block_period * 20)
 
         ad_uses = []
         ad_broadcast = []
@@ -352,7 +353,10 @@ class MediaPlanApp:
                     continue
                 timer = 0
                 block_start = cur_time
-                if (ad_block) % block_period == 1:
+                reset = 1
+                if block_period == 1:
+                    reset = 0
+                if (ad_block) % block_period == reset:
                     index_20 = index_20_start
                 for i in range(len(self.ad_repeat)):
                     if self.ad_repeat[i] == 5 and ad_uses[i] != self.ad_repeat[i]:
@@ -390,7 +394,10 @@ class MediaPlanApp:
                             continue
 
                     if self.ad_repeat[i] == 15 and ad_uses[i] != self.ad_repeat[i]:
-                        if (ad_block % int(blocks / 15) == 1) or (ad_broadcast[i] == 1):
+                        mod = 1
+                        if int(blocks / 15) == 1:
+                            mod = 0
+                        if (ad_block % int(blocks / 15) == mod) or (ad_broadcast[i] == 1):
                             if ads_in_block == adlimit:
                                 ad_broadcast[i] = 1
                                 continue
