@@ -5,7 +5,8 @@ from datetime import datetime
 from openpyxl.styles import PatternFill
 from mutagen import File
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
+from tkinter import *
 
 
 def find_ab(percentage):
@@ -110,6 +111,7 @@ class MediaPlanApp:
         self.setup_initial_gui()
 
     def setup_initial_gui(self):
+        
         self.frame = tk.Frame(self.root, padx=10, pady=10)
         self.frame.pack(padx=10, pady=10)
 
@@ -132,6 +134,8 @@ class MediaPlanApp:
         self.ad_frame.pack(padx=10, pady=10)
 
         tk.Button(self.ad_frame, text="Сгенерировать медиаплан", command=self.generate_media_plan).pack(pady=10)
+
+        
 
     def browse_music_files(self):
         files = filedialog.askopenfilenames(filetypes=[("Audio files", "*.mp3 *.wav *.flac *.m4a *.ogg")])
@@ -158,7 +162,8 @@ class MediaPlanApp:
         ad_dur_entry.grid(row=2, column=1, padx=5, pady=5)
 
         tk.Label(ad_frame, text="Повторы:").grid(row=3, column=0, padx=5, pady=5)
-        ad_repeat_entry = tk.Entry(ad_frame, width=10)
+        ad_repeat_entry = ttk.Combobox(ad_frame, values=["20", "15", "10", "5"])
+        ad_repeat_entry.set("20")
         ad_repeat_entry.grid(row=3, column=1, padx=5, pady=5)
 
         self.ad_name.append(ad_name_entry)
