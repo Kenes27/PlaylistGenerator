@@ -8,7 +8,6 @@ from mutagen import File
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
-
 def find_ab(percentage):
     if percentage == 0:
         return 0
@@ -24,7 +23,6 @@ def find_ab(percentage):
         print("too much")
         return -1
 
-
 def hour_to_seconds(time):
     a = 0
     b = ''
@@ -38,7 +36,6 @@ def hour_to_seconds(time):
         b += str(x)
     a += int(b)
     return a
-
 
 def sec_to_hour(time):
     a = int(time / 3600)
@@ -61,7 +58,6 @@ def sec_to_hour(time):
     else:
         b = b + str(time)
     return b
-
 
 def sort_list(repeat):
     pos = 0
@@ -88,13 +84,11 @@ def sort_list(repeat):
         iter = pos
     return arr_llst, repeat
 
-
 def rearrange(index, lists):
     new_list = []
     for i in range(len(index)):
         new_list.append(lists[index[i]])
     return new_list
-
 
 class MediaPlanApp:
     def __init__(self, root):
@@ -105,6 +99,7 @@ class MediaPlanApp:
         self.ad_dur = []
         self.ad_repeat = []
         self.ad_name = []
+        self.objects = []
 
         # Setup initial GUI elements
         self.setup_initial_gui()
@@ -128,12 +123,15 @@ class MediaPlanApp:
         self.ads_folder_entry.grid(row=2, column=1, padx=5, pady=5)
         tk.Button(self.frame, text="Browse", command=self.browse_ads_folder).grid(row=2, column=2, padx=5, pady=5)
 
-        tk.Label(self.frame, text="Number of Advertisers:", anchor='w').grid(row=3, column=0, sticky=tk.W, padx=5,
-                                                                             pady=5)
+        tk.Label(self.frame, text="Number of Advertisers:", anchor='w').grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
         self.ad_number_entry = tk.Entry(self.frame, width=10)
         self.ad_number_entry.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
 
-        tk.Button(self.frame, text="Next", command=self.setup_ad_inputs).grid(row=4, column=1, pady=10)
+        tk.Label(self.frame, text="Number of Objects:", anchor='w').grid(row=4, column=0, sticky=tk.W, padx=5, pady=5)
+        self.object_number_entry = tk.Entry(self.frame, width=10)
+        self.object_number_entry.grid(row=4, column=1, sticky=tk.W, padx=5, pady=5)
+
+        tk.Button(self.frame, text="Next", command=self.setup_object_inputs).grid(row=5, column=1, pady=10)
 
     def browse_music_folder(self):
         folder = filedialog.askdirectory()
@@ -153,7 +151,71 @@ class MediaPlanApp:
             self.ads_folder_entry.delete(0, tk.END)
             self.ads_folder_entry.insert(0, folder)
 
+    def setup_object_inputs(self):
+        try:
+            self.ad_number = int(self.ad_number_entry.get())
+            self.object_number = int(self.object_number_entry.get())
+        except ValueError:
+            messagebox.showerror("Error", "Number of advertisers and objects must be integers.")
+            return
+
+        self.music_folder = self.music_folder_entry.get()
+        self.objects_file = self.objects_file_entry.get()
+        self.ads_folder = self.ads_folder_entry.get()
+
+        if not self.music_folder or not self.objects_file or not self.ads_folder:
+            messagebox.showerror("Error", "Please select all required folders and files.")
+            return
+
+        # Setup object input window
+        self.object_window = tk.Toplevel(self.root)
+        self.object_window.title("Enter Object Times")
+
+        self.canvas = tk.Canvas(self.object_window, borderwidth=0)
+        self.scroll_frame = tk.Frame(self.canvas)
+        self.vsb = tk.Scrollbar(self.object_window, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.vsb.set)
+
+        self.vsb.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.canvas.create_window((4, 4), window=self.scroll_frame, anchor="nw")
+
+        self.scroll_frame.bind("<Configure>", lambda event, canvas=self.canvas: self.on_frame_configure(canvas))
+
+        tk.Label(self.scroll_frame, text="Object Name").grid(row=0, column=0, padx=5, pady=5)
+        tk.Label(self.scroll_frame, text="Time 1").grid(row=0, column=1, padx=5, pady=5)
+        tk.Label(self.scroll_frame, text="Time 2").grid(row=0, column=2, padx=5, pady=5)
+
+        self.object_entries = []
+
+        for i in range(self.object_number):
+            object_name_entry = tk.Entry(self.scroll_frame)
+            object_name_entry.grid(row=i + 1, column=0, padx=5, pady=5)
+
+            time1_entry = tk.Entry(self.scroll_frame)
+            time1_entry.grid(row=i + 1, column=1, padx=5, pady=5)
+
+            time2_entry = tk.Entry(self.scroll_frame)
+            time2_entry.grid(row=i + 1, column=2, padx=5, pady=5)
+
+            self.object_entries.append((object_name_entry, time1_entry, time2_entry))
+
+        tk.Button(self.scroll_frame, text="Next", command=self.setup_ad_inputs).grid(row=self.object_number + 1, column=1, pady=10)
+
     def setup_ad_inputs(self):
+        # Get object data
+        self.objects = []
+        for name_entry, time1_entry, time2_entry in self.object_entries:
+            name = name_entry.get()
+            time1 = time1_entry.get()
+            time2 = time2_entry.get()
+            self.objects.append({
+                "Name": name,
+                "time1": time1,
+                "time2": time2
+            })
+
+        # Process ad data
         try:
             self.ad_number = int(self.ad_number_entry.get())
         except ValueError:
@@ -210,8 +272,7 @@ class MediaPlanApp:
 
             self.ad_entries.append((ad_dur_entry, ad_repeat_entry))
 
-        tk.Button(self.scroll_frame, text="Generate Media Plan", command=self.generate_media_plan).grid(
-            row=self.ad_number + 1, column=1, pady=10)
+        tk.Button(self.scroll_frame, text="Generate Media Plan", command=self.generate_media_plan).grid(row=self.ad_number + 1, column=1, pady=10)
 
     def on_frame_configure(self, canvas):
         '''Reset the scroll region to encompass the inner frame'''
@@ -257,12 +318,10 @@ class MediaPlanApp:
                 song_dur.append(None)
 
         # Process object data
-        with open(self.objects_file, encoding='utf-8') as object_file:
-            object_data = json.load(object_file)
-            for x in object_data['objects']:
-                object_name.append(x['Name'])
-                object_time1.append(hour_to_seconds(x['time1']))
-                object_time2.append(hour_to_seconds(x['time2']))
+        for obj in self.objects:
+            object_name.append(obj['Name'])
+            object_time1.append(hour_to_seconds(obj['time1']))
+            object_time2.append(hour_to_seconds(obj['time2']))
 
         indeces, self.ad_repeat = sort_list(self.ad_repeat)
         self.ad_name = rearrange(indeces, self.ad_name)
