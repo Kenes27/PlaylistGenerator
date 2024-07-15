@@ -8,7 +8,6 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from tkinter import *
 
-
 def find_ab(percentage):
     if percentage == 0:
         return 0
@@ -24,7 +23,6 @@ def find_ab(percentage):
         print("too much")
         return -1
 
-
 def hour_to_seconds(time):
     a = 0
     b = ''
@@ -38,7 +36,6 @@ def hour_to_seconds(time):
         b += str(x)
     a += int(b)
     return a
-
 
 def sec_to_hour(time):
     a = int(time / 3600)
@@ -61,7 +58,6 @@ def sec_to_hour(time):
     else:
         b = b + str(time)
     return b
-
 
 def sort_list(repeat):
     pos = 0
@@ -88,13 +84,11 @@ def sort_list(repeat):
         iter = pos
     return arr_llst, repeat
 
-
 def rearrange(index, lists):
     new_list = []
     for i in range(len(index)):
         new_list.append(lists[index[i]])
     return new_list
-
 
 class MediaPlanApp:
     def __init__(self, root):
@@ -105,6 +99,7 @@ class MediaPlanApp:
         self.ad_dur = []
         self.ad_repeat = []
         self.ad_name = []
+        self.ad_files = []
         self.music_files = []
 
         # Настройка начального интерфейса
@@ -157,25 +152,21 @@ class MediaPlanApp:
         ad_frame = tk.Frame(self.ad_frame)
         ad_frame.pack(padx=5, pady=5)
 
-        tk.Label(ad_frame, text="Название рекламы:").grid(row=0, column=0, padx=5, pady=5)
-        ad_name_entry = tk.Entry(ad_frame, width=30)
-        ad_name_entry.grid(row=0, column=1, padx=5, pady=5)
-
-        tk.Label(ad_frame, text="Файл рекламы:").grid(row=1, column=0, padx=5, pady=5)
+        tk.Label(ad_frame, text="Файл рекламы:").grid(row=0, column=0, padx=5, pady=5)
         ad_file_entry = tk.Entry(ad_frame, width=30)
-        ad_file_entry.grid(row=1, column=1, padx=5, pady=5)
-        tk.Button(ad_frame, text="Обзор", command=lambda: self.browse_ad_file(ad_file_entry)).grid(row=1, column=2, padx=5, pady=5)
+        ad_file_entry.grid(row=0, column=1, padx=5, pady=5)
+        tk.Button(ad_frame, text="Обзор", command=lambda: self.browse_ad_file(ad_file_entry)).grid(row=0, column=2, padx=5, pady=5)
 
-        tk.Label(ad_frame, text="Продолжительность (секунды):").grid(row=2, column=0, padx=5, pady=5)
+        tk.Label(ad_frame, text="Продолжительность (секунды):").grid(row=1, column=0, padx=5, pady=5)
         ad_dur_entry = tk.Entry(ad_frame, width=10)
-        ad_dur_entry.grid(row=2, column=1, padx=5, pady=5)
+        ad_dur_entry.grid(row=1, column=1, padx=5, pady=5)
 
-        tk.Label(ad_frame, text="Повторы:").grid(row=3, column=0, padx=5, pady=5)
+        tk.Label(ad_frame, text="Повторы:").grid(row=2, column=0, padx=5, pady=5)
         ad_repeat_entry = ttk.Combobox(ad_frame, values=["20", "15", "10", "5"])
         ad_repeat_entry.set("20")
-        ad_repeat_entry.grid(row=3, column=1, padx=5, pady=5)
+        ad_repeat_entry.grid(row=2, column=1, padx=5, pady=5)
 
-        self.ad_name.append(ad_name_entry)
+        self.ad_files.append(ad_file_entry)
         self.ad_dur.append(ad_dur_entry)
         self.ad_repeat.append(ad_repeat_entry)
 
@@ -190,12 +181,13 @@ class MediaPlanApp:
         ad_repeats = []
         ad_names = []
 
-        for ad_name_entry, ad_dur_entry, ad_repeat_entry in zip(self.ad_name, self.ad_dur, self.ad_repeat):
-            ad_name = ad_name_entry.get()
+        for ad_file_entry, ad_dur_entry, ad_repeat_entry in zip(self.ad_files, self.ad_dur, self.ad_repeat):
+            ad_file = ad_file_entry.get()
+            ad_name = os.path.basename(ad_file)
             ad_dur = ad_dur_entry.get()
             ad_repeat = ad_repeat_entry.get()
 
-            if not ad_name or not ad_dur or not ad_repeat:
+            if not ad_file or not ad_dur or not ad_repeat:
                 messagebox.showerror("Ошибка", "Пожалуйста, заполните все поля для каждой рекламы.")
                 return
 
