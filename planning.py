@@ -1,5 +1,4 @@
 import os
-import json
 import random
 import openpyxl
 from datetime import datetime
@@ -105,6 +104,7 @@ class MediaPlanApp:
         self.ad_dur = []
         self.ad_repeat = []
         self.ad_name = []
+        self.music_files = []
 
         # Настройка начального интерфейса
         self.setup_initial_gui()
@@ -113,120 +113,99 @@ class MediaPlanApp:
         self.frame = tk.Frame(self.root, padx=10, pady=10)
         self.frame.pack(padx=10, pady=10)
 
-        tk.Label(self.frame, text="Папка с музыкой:", anchor='w').grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
-        self.music_folder_entry = tk.Entry(self.frame, width=50)
-        self.music_folder_entry.grid(row=0, column=1, padx=5, pady=5)
-        tk.Button(self.frame, text="Обзор", command=self.browse_music_folder).grid(row=0, column=2, padx=5, pady=5)
+        tk.Label(self.frame, text="Музыкальные файлы:", anchor='w').grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        self.music_files_entry = tk.Entry(self.frame, width=50)
+        self.music_files_entry.grid(row=0, column=1, padx=5, pady=5)
+        tk.Button(self.frame, text="Обзор", command=self.browse_music_files).grid(row=0, column=2, padx=5, pady=5)
 
-        tk.Label(self.frame, text="Папка с рекламой:", anchor='w').grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
-        self.ads_folder_entry = tk.Entry(self.frame, width=50)
-        self.ads_folder_entry.grid(row=1, column=1, padx=5, pady=5)
-        tk.Button(self.frame, text="Обзор", command=self.browse_ads_folder).grid(row=1, column=2, padx=5, pady=5)
-
-        tk.Label(self.frame, text="Количество рекламодателей:", anchor='w').grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
-        self.ad_number_entry = tk.Entry(self.frame, width=10)
-        self.ad_number_entry.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
-
-        tk.Label(self.frame, text="Начальное время:", anchor='w').grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.frame, text="Начальное время:", anchor='w').grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
         self.start_time_entry = tk.Entry(self.frame, width=10)
-        self.start_time_entry.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
+        self.start_time_entry.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
 
-        tk.Label(self.frame, text="Конечное время:", anchor='w').grid(row=4, column=0, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.frame, text="Конечное время:", anchor='w').grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
         self.end_time_entry = tk.Entry(self.frame, width=10)
-        self.end_time_entry.grid(row=4, column=1, sticky=tk.W, padx=5, pady=5)
+        self.end_time_entry.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
 
-        tk.Button(self.frame, text="Далее", command=self.setup_ad_inputs).grid(row=5, column=1, pady=10)
+        tk.Button(self.frame, text="Добавить рекламу", command=self.add_advertisement).grid(row=3, column=1, pady=10)
 
-    def browse_music_folder(self):
-        folder = filedialog.askdirectory()
-        if folder:
-            self.music_folder_entry.delete(0, tk.END)
-            self.music_folder_entry.insert(0, folder)
+        self.ad_frame = tk.Frame(self.root, padx=10, pady=10)
+        self.ad_frame.pack(padx=10, pady=10)
 
-    def browse_ads_folder(self):
-        folder = filedialog.askdirectory()
-        if folder:
-            self.ads_folder_entry.delete(0, tk.END)
-            self.ads_folder_entry.insert(0, folder)
+        tk.Button(self.ad_frame, text="Сгенерировать медиаплан", command=self.generate_media_plan).pack(pady=10)
 
-    def setup_ad_inputs(self):
-        try:
-            self.ad_number = int(self.ad_number_entry.get())
-        except ValueError:
-            messagebox.showerror("Ошибка", "Количество рекламодателей должно быть целым числом.")
-            return
+    def browse_music_files(self):
+        files = filedialog.askopenfilenames(filetypes=[("Audio files", "*.mp3 *.wav *.flac *.m4a *.ogg")])
+        if files:
+            self.music_files_entry.delete(0, tk.END)
+            self.music_files_entry.insert(0, "; ".join(files))
+            self.music_files = files
 
-        self.music_folder = self.music_folder_entry.get()
-        self.ads_folder = self.ads_folder_entry.get()
-        self.start_time = self.start_time_entry.get()
-        self.end_time = self.end_time_entry.get()
+    def add_advertisement(self):
+        ad_frame = tk.Frame(self.ad_frame)
+        ad_frame.pack(padx=5, pady=5)
 
-        if not self.music_folder or not self.ads_folder or not self.start_time or not self.end_time:
-            messagebox.showerror("Ошибка", "Пожалуйста, выберите все необходимые папки и введите время.")
-            return
+        tk.Label(ad_frame, text="Название рекламы:").grid(row=0, column=0, padx=5, pady=5)
+        ad_name_entry = tk.Entry(ad_frame, width=30)
+        ad_name_entry.grid(row=0, column=1, padx=5, pady=5)
 
-        # Обработка данных рекламы
-        ad_count = 0
-        for x in os.listdir(self.ads_folder):
-            filename = os.fsdecode(x)
-            self.ad_name.append(filename)
-            ad_count += 1
-            if ad_count == self.ad_number:
-                break
+        tk.Label(ad_frame, text="Файл рекламы:").grid(row=1, column=0, padx=5, pady=5)
+        ad_file_entry = tk.Entry(ad_frame, width=30)
+        ad_file_entry.grid(row=1, column=1, padx=5, pady=5)
+        tk.Button(ad_frame, text="Обзор", command=lambda: self.browse_ad_file(ad_file_entry)).grid(row=1, column=2, padx=5, pady=5)
 
-        # Создание прокручиваемого окна
-        self.ad_window = tk.Toplevel(self.root)
-        self.ad_window.title("Введите продолжительность и количество повторов для рекламы")
+        tk.Label(ad_frame, text="Продолжительность (секунды):").grid(row=2, column=0, padx=5, pady=5)
+        ad_dur_entry = tk.Entry(ad_frame, width=10)
+        ad_dur_entry.grid(row=2, column=1, padx=5, pady=5)
 
-        self.canvas = tk.Canvas(self.ad_window, borderwidth=0)
-        self.scroll_frame = tk.Frame(self.canvas)
-        self.vsb = tk.Scrollbar(self.ad_window, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=self.vsb.set)
+        tk.Label(ad_frame, text="Повторы:").grid(row=3, column=0, padx=5, pady=5)
+        ad_repeat_entry = tk.Entry(ad_frame, width=10)
+        ad_repeat_entry.grid(row=3, column=1, padx=5, pady=5)
 
-        self.vsb.pack(side="right", fill="y")
-        self.canvas.pack(side="left", fill="both", expand=True)
-        self.canvas.create_window((4, 4), window=self.scroll_frame, anchor="nw")
+        self.ad_name.append(ad_name_entry)
+        self.ad_dur.append(ad_dur_entry)
+        self.ad_repeat.append(ad_repeat_entry)
 
-        self.scroll_frame.bind("<Configure>", lambda event, canvas=self.canvas: self.on_frame_configure(canvas))
-
-        tk.Label(self.scroll_frame, text="Название рекламы").grid(row=0, column=0, padx=5, pady=5)
-        tk.Label(self.scroll_frame, text="Продолжительность (секунды)").grid(row=0, column=1, padx=5, pady=5)
-        tk.Label(self.scroll_frame, text="Повторы").grid(row=0, column=2, padx=5, pady=5)
-
-        self.ad_entries = []
-
-        for i in range(self.ad_number):
-            ad_name_label = tk.Label(self.scroll_frame, text=self.ad_name[i])
-            ad_name_label.grid(row=i + 1, column=0, padx=5, pady=5)
-
-            ad_dur_entry = tk.Entry(self.scroll_frame)
-            ad_dur_entry.grid(row=i + 1, column=1, padx=5, pady=5)
-
-            ad_repeat_entry = tk.Entry(self.scroll_frame)
-            ad_repeat_entry.grid(row=i + 1, column=2, padx=5, pady=5)
-
-            self.ad_entries.append((ad_dur_entry, ad_repeat_entry))
-
-        tk.Button(self.scroll_frame, text="Сгенерировать медиаплан", command=self.generate_media_plan).grid(
-            row=self.ad_number + 1, column=1, pady=10)
-
-    def on_frame_configure(self, canvas):
-        '''Сброс области прокрутки'''
-        canvas.configure(scrollregion=canvas.bbox("all"))
+    def browse_ad_file(self, ad_file_entry):
+        file = filedialog.askopenfilename(filetypes=[("Audio files", "*.mp3 *.wav *.flac *.m4a *.ogg")])
+        if file:
+            ad_file_entry.delete(0, tk.END)
+            ad_file_entry.insert(0, file)
 
     def generate_media_plan(self):
-        self.ad_dur = []
-        self.ad_repeat = []
+        ad_durations = []
+        ad_repeats = []
+        ad_names = []
 
-        for ad_dur_entry, ad_repeat_entry in self.ad_entries:
+        for ad_name_entry, ad_dur_entry, ad_repeat_entry in zip(self.ad_name, self.ad_dur, self.ad_repeat):
+            ad_name = ad_name_entry.get()
+            ad_dur = ad_dur_entry.get()
+            ad_repeat = ad_repeat_entry.get()
+
+            if not ad_name or not ad_dur or not ad_repeat:
+                messagebox.showerror("Ошибка", "Пожалуйста, заполните все поля для каждой рекламы.")
+                return
+
             try:
-                ad_dur = int(ad_dur_entry.get())
-                ad_repeat = int(ad_repeat_entry.get())
+                ad_dur = int(ad_dur)
+                ad_repeat = int(ad_repeat)
             except ValueError:
                 messagebox.showerror("Ошибка", "Продолжительность и количество повторов для рекламы должны быть целыми числами.")
                 return
-            self.ad_dur.append(ad_dur)
-            self.ad_repeat.append(ad_repeat)
+
+            ad_durations.append(ad_dur)
+            ad_repeats.append(ad_repeat)
+            ad_names.append(ad_name)
+
+        self.ad_dur = ad_durations
+        self.ad_repeat = ad_repeats
+        self.ad_name = ad_names
+
+        self.start_time = self.start_time_entry.get()
+        self.end_time = self.end_time_entry.get()
+
+        if not self.start_time or not self.end_time:
+            messagebox.showerror("Ошибка", "Пожалуйста, введите начальное и конечное время.")
+            return
 
         current_datetime = datetime.now().strftime("%Y-%m-%d %H-%M")
 
@@ -235,10 +214,9 @@ class MediaPlanApp:
         song_dur = []
 
         # Обработка музыкальных файлов
-        for x in os.listdir(self.music_folder):
-            filename = os.fsdecode(x)
+        for file_path in self.music_files:
+            filename = os.path.basename(file_path)
             song_name.append(filename)
-            file_path = os.path.join(self.music_folder, filename)
             try:
                 audio = File(file_path)
                 if audio and hasattr(audio, 'info'):
@@ -454,7 +432,7 @@ class MediaPlanApp:
 
         ws.column_dimensions['A'].width = 66
 
-        filename = f"Медиаплан {self.ad_number} реклам 20,15,10,5 повторов {sum(self.ad_dur)} сек {current_datetime}.xlsx"
+        filename = f"Медиаплан {len(self.ad_name)} реклам 20,15,10,5 повторов {sum(self.ad_dur)} сек {current_datetime}.xlsx"
 
         del wb['Sheet']
         wb.save(filename)
