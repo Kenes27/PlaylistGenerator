@@ -110,7 +110,7 @@ class MediaPlanApp:
         self.frame = tk.Frame(self.root, padx=10, pady=10)
         self.frame.pack(padx=10, pady=10)
 
-        tk.Label(self.frame, text="Музыкальные файлы:", anchor='w').grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.frame, text="Папка с музыкальные файлы:", anchor='w').grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         self.music_files_entry = tk.Entry(self.frame, width=50)
         self.music_files_entry.grid(row=0, column=1, padx=5, pady=5)
         tk.Button(self.frame, text="Обзор", command=self.browse_music_files).grid(row=0, column=2, padx=5, pady=5)
@@ -143,11 +143,10 @@ class MediaPlanApp:
         canvas.configure(scrollregion=canvas.bbox("all"))
 
     def browse_music_files(self):
-        files = filedialog.askopenfilenames(filetypes=[("Audio files", "*.mp3 *.wav *.flac *.m4a *.ogg")])
+        files = filedialog.askdirectory()
         if files:
             self.music_files_entry.delete(0, tk.END)
-            self.music_files_entry.insert(0, "; ".join(files))
-            self.music_files = files
+            self.music_files_entry.insert(0, files)
 
     def add_advertisement(self):
         ad_frame = tk.Frame(self.ad_frame)
@@ -221,19 +220,16 @@ class MediaPlanApp:
         song_dur = []
 
         # Обработка музыкальных файлов
-        for file_path in self.music_files:
+        
+        for file_path in os.listdir(self.music_files_entry.get()):
             filename = os.path.basename(file_path)
-            song_name.append(filename)
             try:
-                audio = File(file_path)
-                if audio and hasattr(audio, 'info'):
-                    duration = audio.info.length
-                    song_dur.append(duration)
-                else:
-                    song_dur.append(None)
+                song = AudioSegment.from_file(self.music_files_entry.get() + '/'+ file_path).duration_seconds
+                song_dur.append(song)
+                song_name.append(filename)
             except Exception as e:
                 print(f"Ошибка при обработке файла {filename}: {e}")
-                song_dur.append(None)
+                #song_dur.append(None)
 
         # Преобразование времени
         object_time1 = hour_to_seconds(self.start_time)
@@ -304,7 +300,7 @@ class MediaPlanApp:
         ws["G3"] = 'Продолжительность'
         ws["H3"] = sum(self.ad_dur)
         ws["G4"] = "Загруженность"
-        ws["H4"] = str(percent * 100) + '%'
+        ws["H4"] = "{:.2f}".format(percent * 100) + '%'
         ws["G5"] = "Максимальный рекламный блок"
         ws["H5"] = adlimit
 
@@ -367,6 +363,7 @@ class MediaPlanApp:
                             ad_broadcast[i] = 0
                             ws["A" + str(row_excel)] = self.ad_name[i]
                             ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+                            ws["C" + str(row_excel)] = ad_uses[i] + 1
                             ws['A' + str(row_excel)].fill = colors[cur_color]
                             ws['B' + str(row_excel)].fill = colors[cur_color]
                             row_excel += 1
@@ -384,6 +381,7 @@ class MediaPlanApp:
                             ad_broadcast[i] = 0
                             ws["A" + str(row_excel)] = self.ad_name[i]
                             ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+                            ws["C" + str(row_excel)] = ad_uses[i] + 1
                             ws['A' + str(row_excel)].fill = colors[cur_color]
                             ws['B' + str(row_excel)].fill = colors[cur_color]
                             row_excel += 1
@@ -404,6 +402,7 @@ class MediaPlanApp:
                             ad_broadcast[i] = 0
                             ws["A" + str(row_excel)] = self.ad_name[i]
                             ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+                            ws["C" + str(row_excel)] = ad_uses[i] + 1
                             ws['A' + str(row_excel)].fill = colors[cur_color]
                             ws['B' + str(row_excel)].fill = colors[cur_color]
                             row_excel += 1
@@ -418,6 +417,7 @@ class MediaPlanApp:
                             continue
                         ws["A" + str(row_excel)] = self.ad_name[i]
                         ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+                        ws["C" + str(row_excel)] = ad_uses[i] + 1
                         ws['A' + str(row_excel)].fill = colors[cur_color]
                         ws['B' + str(row_excel)].fill = colors[cur_color]
                         row_excel += 1
