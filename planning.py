@@ -6,7 +6,7 @@ from datetime import datetime
 from openpyxl.styles import PatternFill
 from mutagen import File
 import tkinter as tk
-from tkinter import filedialog, messagebox, simpledialog
+from tkinter import filedialog, messagebox
 
 
 def find_ab(percentage):
@@ -106,7 +106,7 @@ class MediaPlanApp:
         self.ad_repeat = []
         self.ad_name = []
 
-        # Setup GUI elements
+        # Setup initial GUI elements
         self.setup_initial_gui()
 
     def setup_initial_gui(self):
@@ -177,29 +177,45 @@ class MediaPlanApp:
             if ad_count == self.ad_number:
                 break
 
+        # Create the scrolling canvas and scrollbar
         self.ad_window = tk.Toplevel(self.root)
         self.ad_window.title("Enter Ad Durations and Repeats")
 
-        tk.Label(self.ad_window, text="Ad Name").grid(row=0, column=0, padx=5, pady=5)
-        tk.Label(self.ad_window, text="Duration (seconds)").grid(row=0, column=1, padx=5, pady=5)
-        tk.Label(self.ad_window, text="Repeats").grid(row=0, column=2, padx=5, pady=5)
+        self.canvas = tk.Canvas(self.ad_window, borderwidth=0)
+        self.scroll_frame = tk.Frame(self.canvas)
+        self.vsb = tk.Scrollbar(self.ad_window, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.vsb.set)
+
+        self.vsb.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.canvas.create_window((4, 4), window=self.scroll_frame, anchor="nw")
+
+        self.scroll_frame.bind("<Configure>", lambda event, canvas=self.canvas: self.on_frame_configure(canvas))
+
+        tk.Label(self.scroll_frame, text="Ad Name").grid(row=0, column=0, padx=5, pady=5)
+        tk.Label(self.scroll_frame, text="Duration (seconds)").grid(row=0, column=1, padx=5, pady=5)
+        tk.Label(self.scroll_frame, text="Repeats").grid(row=0, column=2, padx=5, pady=5)
 
         self.ad_entries = []
 
         for i in range(self.ad_number):
-            ad_name_label = tk.Label(self.ad_window, text=self.ad_name[i])
+            ad_name_label = tk.Label(self.scroll_frame, text=self.ad_name[i])
             ad_name_label.grid(row=i + 1, column=0, padx=5, pady=5)
 
-            ad_dur_entry = tk.Entry(self.ad_window)
+            ad_dur_entry = tk.Entry(self.scroll_frame)
             ad_dur_entry.grid(row=i + 1, column=1, padx=5, pady=5)
 
-            ad_repeat_entry = tk.Entry(self.ad_window)
+            ad_repeat_entry = tk.Entry(self.scroll_frame)
             ad_repeat_entry.grid(row=i + 1, column=2, padx=5, pady=5)
 
             self.ad_entries.append((ad_dur_entry, ad_repeat_entry))
 
-        tk.Button(self.ad_window, text="Generate Media Plan", command=self.generate_media_plan).grid(
+        tk.Button(self.scroll_frame, text="Generate Media Plan", command=self.generate_media_plan).grid(
             row=self.ad_number + 1, column=1, pady=10)
+
+    def on_frame_configure(self, canvas):
+        '''Reset the scroll region to encompass the inner frame'''
+        canvas.configure(scrollregion=canvas.bbox("all"))
 
     def generate_media_plan(self):
         self.ad_dur = []
