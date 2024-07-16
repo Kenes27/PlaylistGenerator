@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from tkinter import *
 from pydub import AudioSegment
+import json
 
 
 def find_ab(percentage):
@@ -459,7 +460,7 @@ class MediaPlanApp:
 
         ws.column_dimensions['A'].width = 66
 
-        filename = f"Медиаплан {len(self.ad_name)} реклам 20,15,10,5 повторов {sum(self.ad_dur)} сек {current_datetime}.xlsx"
+        filename = f"Медиаплан {len(self.ad_name)} реклам, средняя прод. {sum(self.ad_dur)} сек {current_datetime}.xlsx"
 
         del wb['Sheet']
         wb.save(filename)
