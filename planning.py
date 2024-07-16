@@ -9,6 +9,7 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter import *
 from pydub import AudioSegment
 
+
 def find_ab(percentage):
     if percentage == 0:
         return 0
@@ -92,7 +93,6 @@ def rearrange(index, lists):
     return new_list
 
 class MediaPlanApp:
-    number = 0
 
     def __init__(self, root):
         self.root = root
@@ -104,6 +104,7 @@ class MediaPlanApp:
         self.ad_name = []
         self.ad_files = []
         self.music_files = []
+        self.number = 0
 
         # Настройка начального интерфейса
         self.setup_initial_gui()
@@ -160,7 +161,9 @@ class MediaPlanApp:
         tk.Label(ad_frame, text= str(self.number) + ". Файл рекламы:").grid(row=0, column=0, padx=5, pady=5)
         ad_file_entry = tk.Entry(ad_frame, width=30)
         ad_file_entry.grid(row=0, column=1, padx=5, pady=5)
-        tk.Button(ad_frame, text="Обзор", command=lambda: self.browse_ad_file(ad_file_entry)).grid(row=0, column=2, padx=5, pady=5)
+        dur_label = tk.Label(ad_frame, text='')
+        dur_label.grid(row=0, column=5, padx=5, pady=5)
+        tk.Button(ad_frame, text="Обзор", command=lambda: self.browse_ad_file(ad_file_entry, dur_label)).grid(row=0, column=2, padx=5, pady=5)
 
         #tk.Label(ad_frame, text="Продолжительность (секунды):").grid(row=1, column=0, padx=5, pady=5)
         #ad_dur_entry = tk.Entry(ad_frame, width=10)
@@ -175,11 +178,14 @@ class MediaPlanApp:
         #self.ad_dur.append(ad_dur_entry)
         self.ad_repeat.append(ad_repeat_entry)
 
-    def browse_ad_file(self, ad_file_entry):
+    def browse_ad_file(self, ad_file_entry, dur_label):
         file = filedialog.askopenfilename(filetypes=[("Audio files", "*.mp3 *.wav *.flac *.m4a *.ogg")])
         if file:
             ad_file_entry.delete(0, tk.END)
             ad_file_entry.insert(0, file)
+        dur_label.config (text = 'Продолжительность: ' +  str(int(AudioSegment.from_file(file).duration_seconds)) + ' сек.')
+        
+        
 
     def generate_media_plan(self):
         ad_durations = []
@@ -458,9 +464,13 @@ class MediaPlanApp:
         del wb['Sheet']
         wb.save(filename)
         messagebox.showinfo("Успех", f"Медиаплан успешно создан и сохранен под именем {filename}!")
+    
+    #def save_json():
+
 
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = MediaPlanApp(root)
+    root.protocol("WM_DELETE_WINDOW")
     root.mainloop()
