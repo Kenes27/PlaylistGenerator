@@ -92,6 +92,8 @@ def rearrange(index, lists):
     return new_list
 
 class MediaPlanApp:
+    number = 0
+
     def __init__(self, root):
         self.root = root
         self.root.title("Генератор медиаплана")
@@ -110,20 +112,22 @@ class MediaPlanApp:
         self.frame = tk.Frame(self.root, padx=10, pady=10)
         self.frame.pack(padx=10, pady=10)
 
-        tk.Label(self.frame, text="Музыкальные файлы:", anchor='w').grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.frame, text="Папка с музыкальные файлы:", anchor='w').grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         self.music_files_entry = tk.Entry(self.frame, width=50)
         self.music_files_entry.grid(row=0, column=1, padx=5, pady=5)
         tk.Button(self.frame, text="Обзор", command=self.browse_music_files).grid(row=0, column=2, padx=5, pady=5)
 
         tk.Label(self.frame, text="Начальное время:", anchor='w').grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
         self.start_time_entry = tk.Entry(self.frame, width=10)
-        self.start_time_entry.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
+        self.start_time_entry.insert(0, "09:00:00")
+        self.start_time_entry.grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
 
-        tk.Label(self.frame, text="Конечное время:", anchor='w').grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.frame, text="Конечное время:", anchor='w').grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
         self.end_time_entry = tk.Entry(self.frame, width=10)
+        self.end_time_entry.insert(0, "16:00:00")
         self.end_time_entry.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
 
-        tk.Button(self.frame, text="Добавить рекламу", command=self.add_advertisement).grid(row=3, column=1, pady=10)
+        tk.Button(self.frame, text="Добавить рекламу", command=self.add_advertisement).grid(row=3, column=0, pady=10)
 
         # Create a canvas for scrolling
         self.canvas = Canvas(self.root, borderwidth=0, width=500, height=300)
@@ -137,23 +141,23 @@ class MediaPlanApp:
 
         self.ad_frame.bind("<Configure>", lambda event, canvas=self.canvas: self.on_frame_configure(canvas))
 
-        tk.Button(self.ad_frame, text="Сгенерировать медиаплан", command=self.generate_media_plan).pack(pady=10)
+        tk.Button(self.frame, text="Сгенерировать медиаплан", command=self.generate_media_plan).grid(row=3, column=1, pady=10)
 
     def on_frame_configure(self, canvas):
         canvas.configure(scrollregion=canvas.bbox("all"))
 
     def browse_music_files(self):
-        files = filedialog.askopenfilenames(filetypes=[("Audio files", "*.mp3 *.wav *.flac *.m4a *.ogg")])
+        files = filedialog.askdirectory()
         if files:
             self.music_files_entry.delete(0, tk.END)
-            self.music_files_entry.insert(0, "; ".join(files))
-            self.music_files = files
+            self.music_files_entry.insert(0, files)
 
     def add_advertisement(self):
+        self.number = self.number + 1
         ad_frame = tk.Frame(self.ad_frame)
         ad_frame.pack(padx=5, pady=5)
 
-        tk.Label(ad_frame, text="Файл рекламы:").grid(row=0, column=0, padx=5, pady=5)
+        tk.Label(ad_frame, text= str(self.number) + ". Файл рекламы:").grid(row=0, column=0, padx=5, pady=5)
         ad_file_entry = tk.Entry(ad_frame, width=30)
         ad_file_entry.grid(row=0, column=1, padx=5, pady=5)
         tk.Button(ad_frame, text="Обзор", command=lambda: self.browse_ad_file(ad_file_entry)).grid(row=0, column=2, padx=5, pady=5)
@@ -162,10 +166,10 @@ class MediaPlanApp:
         #ad_dur_entry = tk.Entry(ad_frame, width=10)
         #ad_dur_entry.grid(row=1, column=1, padx=5, pady=5)
 
-        tk.Label(ad_frame, text="Повторы:").grid(row=2, column=0, padx=5, pady=5)
+        tk.Label(ad_frame, text="Повторы:").grid(row=0, column=3, padx=5, pady=5)
         ad_repeat_entry = ttk.Combobox(ad_frame, values=["20", "15", "10", "5"])
         ad_repeat_entry.set("20")
-        ad_repeat_entry.grid(row=2, column=1, padx=5, pady=5)
+        ad_repeat_entry.grid(row=0, column=4, padx=5, pady=5)
 
         self.ad_files.append(ad_file_entry)
         #self.ad_dur.append(ad_dur_entry)
@@ -186,7 +190,10 @@ class MediaPlanApp:
             ad_file = ad_file_entry.get()
             ad_name = os.path.basename(ad_file)
             ad_dur = AudioSegment.from_file(ad_file).duration_seconds
-            ad_repeat = ad_repeat_entry.get()
+            if isinstance(ad_repeat_entry, int):
+                ad_repeat = ad_repeat_entry
+            else:
+                ad_repeat = ad_repeat_entry.get()
 
             if not ad_file or not ad_dur or not ad_repeat:
                 messagebox.showerror("Ошибка", "Пожалуйста, заполните все поля для каждой рекламы.")
@@ -221,19 +228,16 @@ class MediaPlanApp:
         song_dur = []
 
         # Обработка музыкальных файлов
-        for file_path in self.music_files:
+        
+        for file_path in os.listdir(self.music_files_entry.get()):
             filename = os.path.basename(file_path)
-            song_name.append(filename)
             try:
-                audio = File(file_path)
-                if audio and hasattr(audio, 'info'):
-                    duration = audio.info.length
-                    song_dur.append(duration)
-                else:
-                    song_dur.append(None)
+                song = AudioSegment.from_file(self.music_files_entry.get() + '/'+ file_path).duration_seconds
+                song_dur.append(song)
+                song_name.append(filename)
             except Exception as e:
                 print(f"Ошибка при обработке файла {filename}: {e}")
-                song_dur.append(None)
+                #song_dur.append(None)
 
         # Преобразование времени
         object_time1 = hour_to_seconds(self.start_time)
@@ -304,7 +308,7 @@ class MediaPlanApp:
         ws["G3"] = 'Продолжительность'
         ws["H3"] = sum(self.ad_dur)
         ws["G4"] = "Загруженность"
-        ws["H4"] = str(percent * 100) + '%'
+        ws["H4"] = "{:.2f}".format(percent * 100) + '%'
         ws["G5"] = "Максимальный рекламный блок"
         ws["H5"] = adlimit
 
@@ -367,6 +371,7 @@ class MediaPlanApp:
                             ad_broadcast[i] = 0
                             ws["A" + str(row_excel)] = self.ad_name[i]
                             ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+                            ws["C" + str(row_excel)] = ad_uses[i] + 1
                             ws['A' + str(row_excel)].fill = colors[cur_color]
                             ws['B' + str(row_excel)].fill = colors[cur_color]
                             row_excel += 1
@@ -384,6 +389,7 @@ class MediaPlanApp:
                             ad_broadcast[i] = 0
                             ws["A" + str(row_excel)] = self.ad_name[i]
                             ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+                            ws["C" + str(row_excel)] = ad_uses[i] + 1
                             ws['A' + str(row_excel)].fill = colors[cur_color]
                             ws['B' + str(row_excel)].fill = colors[cur_color]
                             row_excel += 1
@@ -404,6 +410,7 @@ class MediaPlanApp:
                             ad_broadcast[i] = 0
                             ws["A" + str(row_excel)] = self.ad_name[i]
                             ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+                            ws["C" + str(row_excel)] = ad_uses[i] + 1
                             ws['A' + str(row_excel)].fill = colors[cur_color]
                             ws['B' + str(row_excel)].fill = colors[cur_color]
                             row_excel += 1
@@ -418,6 +425,7 @@ class MediaPlanApp:
                             continue
                         ws["A" + str(row_excel)] = self.ad_name[i]
                         ws["B" + str(row_excel)] = sec_to_hour(cur_time)
+                        ws["C" + str(row_excel)] = ad_uses[i] + 1
                         ws['A' + str(row_excel)].fill = colors[cur_color]
                         ws['B' + str(row_excel)].fill = colors[cur_color]
                         row_excel += 1
