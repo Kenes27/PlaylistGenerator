@@ -113,22 +113,41 @@ class MediaPlanApp:
         self.setup_initial_gui()
 
     def setup_initial_gui(self):
+
+        exe_path = os.path.abspath(sys.argv[0])
+        exe_dir = os.path.dirname(exe_path)
+
+        json_data = None
+        
+        if os.path.isfile(exe_dir + '/data.json'):
+            with open(exe_dir + '/data.json', encoding='ascii') as f:
+                json_data = json.load(f)
+
+
         self.frame = tk.Frame(self.root, padx=10, pady=10)
         self.frame.pack(padx=10, pady=10)
 
         tk.Label(self.frame, text="Папка с музыкальными файлами:", anchor='w').grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         self.music_files_entry = tk.Entry(self.frame, width=50)
         self.music_files_entry.grid(row=0, column=1, padx=5, pady=5)
+        if json_data != None:
+            self.music_files_entry.insert(0, json_data["music"])
         tk.Button(self.frame, text="Обзор", command=self.browse_music_files).grid(row=0, column=2, padx=5, pady=5)
 
         tk.Label(self.frame, text="Начальное время:", anchor='w').grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
         self.start_time_entry = tk.Entry(self.frame, width=10)
-        self.start_time_entry.insert(0, "09:00:00")
+        if json_data != None and json_data["start"] != "":
+            self.start_time_entry.insert(0, json_data["start"])
+        else:
+            self.start_time_entry.insert(0, "09:00:00")
         self.start_time_entry.grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
 
         tk.Label(self.frame, text="Конечное время:", anchor='w').grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
         self.end_time_entry = tk.Entry(self.frame, width=10)
-        self.end_time_entry.insert(0, "16:00:00")
+        if json_data != None and json_data["end"] != "":
+            self.end_time_entry.insert(0, json_data["end"])
+        else:
+            self.end_time_entry.insert(0, "16:00:00")
         self.end_time_entry.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
 
         self.load = tk.Label(self.frame, text="", anchor='w')
@@ -150,6 +169,11 @@ class MediaPlanApp:
 
         tk.Button(self.frame, text="Удалить рекламу", command=self.delete_advertisement).grid(row=3, column=1, pady=10)
         tk.Button(self.frame, text="Сгенерировать медиаплан", command=self.generate_media_plan).grid(row=3, column=2, pady=10)
+
+        if json_data != None and "ad" in json_data.keys():
+            for x in json_data["ad"]:
+                self.add_advertisement_init(x[0], x[1])
+
         
 
     def on_frame_configure(self, canvas):
@@ -174,17 +198,34 @@ class MediaPlanApp:
         dur_label.grid(row=0, column=5, padx=5, pady=5)
         tk.Button(ad_frame, text="Обзор", command=lambda: self.browse_ad_file(ad_file_entry, dur_label)).grid(row=0, column=2, padx=5, pady=5)
 
-        #tk.Label(ad_frame, text="Продолжительность (секунды):").grid(row=1, column=0, padx=5, pady=5)
-        #ad_dur_entry = tk.Entry(ad_frame, width=10)
-        #ad_dur_entry.grid(row=1, column=1, padx=5, pady=5)
-
         tk.Label(ad_frame, text="Повторы:").grid(row=0, column=3, padx=5, pady=5)
         ad_repeat_entry = ttk.Combobox(ad_frame, values=["20", "15", "10", "5"])
         ad_repeat_entry.set("20")
         ad_repeat_entry.grid(row=0, column=4, padx=5, pady=5)
 
         self.ad_files.append(ad_file_entry)
-        #self.ad_dur.append(ad_dur_entry)
+        self.ad_repeat.append(ad_repeat_entry)
+
+    def add_advertisement_init(self, path, repeat):
+        self.number = self.number + 1
+        ad_frame = tk.Frame(self.ad_frame)
+        ad_frame.pack(padx=5, pady=5)
+        self.ad_frame_list.append(ad_frame)
+
+        tk.Label(ad_frame, text= str(self.number) + ". Файл рекламы:").grid(row=0, column=0, padx=5, pady=5)
+        ad_file_entry = tk.Entry(ad_frame, width=30)
+        ad_file_entry.grid(row=0, column=1, padx=5, pady=5)
+        ad_file_entry.insert(0, path)
+        dur_label = tk.Label(ad_frame, text='')
+        dur_label.grid(row=0, column=5, padx=5, pady=5)
+        tk.Button(ad_frame, text="Обзор", command=lambda: self.browse_ad_file(ad_file_entry, dur_label)).grid(row=0, column=2, padx=5, pady=5)
+
+        tk.Label(ad_frame, text="Повторы:").grid(row=0, column=3, padx=5, pady=5)
+        ad_repeat_entry = ttk.Combobox(ad_frame, values=["20", "15", "10", "5"])
+        ad_repeat_entry.set(repeat)
+        ad_repeat_entry.grid(row=0, column=4, padx=5, pady=5)
+
+        self.ad_files.append(ad_file_entry)
         self.ad_repeat.append(ad_repeat_entry)
 
     def delete_advertisement(self):
@@ -483,7 +524,7 @@ class MediaPlanApp:
 
         ws.column_dimensions['A'].width = 66
 
-        filename = f"Медиаплан {len(self.ad_name)} реклам, средняя прод. {sum(self.ad_dur)} сек {current_datetime}.xlsx"
+        filename = f"Медиаплан {len(self.ad_name)} реклам, средняя прод. {sum(self.ad_dur)/len(self.ad_name)} сек, раб. время {int(working_time/3600)} ч., {current_datetime}.xlsx"
 
         del wb['Sheet']
         wb.save(filename)
