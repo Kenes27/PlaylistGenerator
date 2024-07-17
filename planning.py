@@ -4,7 +4,6 @@ import random
 import openpyxl
 from datetime import datetime
 from openpyxl.styles import PatternFill
-from mutagen import File
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from tkinter import *
@@ -27,6 +26,7 @@ def find_ab(percentage):
         print("too much")
         return -1
 
+
 def hour_to_seconds(time):
     a = 0
     b = ''
@@ -40,6 +40,7 @@ def hour_to_seconds(time):
         b += str(x)
     a += int(b)
     return a
+
 
 def sec_to_hour(time):
     a = int(time / 3600)
@@ -62,6 +63,7 @@ def sec_to_hour(time):
     else:
         b = b + str(time)
     return b
+
 
 def sort_list(repeat):
     pos = 0
@@ -88,11 +90,13 @@ def sort_list(repeat):
         iter = pos
     return arr_llst, repeat
 
+
 def rearrange(index, lists):
     new_list = []
     for i in range(len(index)):
         new_list.append(lists[index[i]])
     return new_list
+
 
 class MediaPlanApp:
 
@@ -118,16 +122,16 @@ class MediaPlanApp:
         exe_dir = os.path.dirname(exe_path)
 
         json_data = None
-        
+
         if os.path.isfile(exe_dir + '/data.json'):
             with open(exe_dir + '/data.json', encoding='ascii') as f:
                 json_data = json.load(f)
 
-
         self.frame = tk.Frame(self.root, padx=10, pady=10)
         self.frame.pack(padx=10, pady=10)
 
-        tk.Label(self.frame, text="Папка с музыкальными файлами:", anchor='w').grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.frame, text="Папка с музыкальными файлами:", anchor='w').grid(row=0, column=0, sticky=tk.W,
+                                                                                    padx=5, pady=5)
         self.music_files_entry = tk.Entry(self.frame, width=50)
         self.music_files_entry.grid(row=0, column=1, padx=5, pady=5)
         if json_data != None:
@@ -141,6 +145,7 @@ class MediaPlanApp:
         else:
             self.start_time_entry.insert(0, "09:00:00")
         self.start_time_entry.grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
+        self.start_time_entry.bind("<KeyRelease>", lambda event: self.update_load())
 
         tk.Label(self.frame, text="Конечное время:", anchor='w').grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
         self.end_time_entry = tk.Entry(self.frame, width=10)
@@ -149,6 +154,7 @@ class MediaPlanApp:
         else:
             self.end_time_entry.insert(0, "16:00:00")
         self.end_time_entry.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
+        self.end_time_entry.bind("<KeyRelease>", lambda event: self.update_load())
 
         self.load = tk.Label(self.frame, text="", anchor='w')
         self.load.grid(row=1, column=2, sticky=tk.W, padx=5, pady=5)
@@ -168,13 +174,12 @@ class MediaPlanApp:
         self.ad_frame.bind("<Configure>", lambda event, canvas=self.canvas: self.on_frame_configure(canvas))
 
         tk.Button(self.frame, text="Удалить рекламу", command=self.delete_advertisement).grid(row=3, column=1, pady=10)
-        tk.Button(self.frame, text="Сгенерировать медиаплан", command=self.generate_media_plan).grid(row=3, column=2, pady=10)
+        tk.Button(self.frame, text="Сгенерировать медиаплан", command=self.generate_media_plan).grid(row=3, column=2,
+                                                                                                     pady=10)
 
         if json_data != None and "ad" in json_data.keys():
             for x in json_data["ad"]:
                 self.add_advertisement_init(x[0], x[1])
-
-        
 
     def on_frame_configure(self, canvas):
         canvas.configure(scrollregion=canvas.bbox("all"))
@@ -191,20 +196,27 @@ class MediaPlanApp:
         ad_frame.pack(padx=5, pady=5)
         self.ad_frame_list.append(ad_frame)
 
-        tk.Label(ad_frame, text= str(self.number) + ". Файл рекламы:").grid(row=0, column=0, padx=5, pady=5)
+        tk.Label(ad_frame, text=str(self.number) + ". Файл рекламы:").grid(row=0, column=0, padx=5, pady=5)
         ad_file_entry = tk.Entry(ad_frame, width=30)
         ad_file_entry.grid(row=0, column=1, padx=5, pady=5)
         dur_label = tk.Label(ad_frame, text='')
         dur_label.grid(row=0, column=5, padx=5, pady=5)
-        tk.Button(ad_frame, text="Обзор", command=lambda: self.browse_ad_file(ad_file_entry, dur_label)).grid(row=0, column=2, padx=5, pady=5)
+        tk.Button(ad_frame, text="Обзор", command=lambda: self.browse_ad_file(ad_file_entry, dur_label)).grid(row=0,
+                                                                                                              column=2,
+                                                                                                              padx=5,
+                                                                                                              pady=5)
 
         tk.Label(ad_frame, text="Повторы:").grid(row=0, column=3, padx=5, pady=5)
         ad_repeat_entry = ttk.Combobox(ad_frame, values=["20", "15", "10", "5"])
         ad_repeat_entry.set("20")
         ad_repeat_entry.grid(row=0, column=4, padx=5, pady=5)
 
+        ad_file_entry.bind("<KeyRelease>", lambda event: self.update_load())
+        ad_repeat_entry.bind("<<ComboboxSelected>>", lambda event: self.update_load())
+
         self.ad_files.append(ad_file_entry)
         self.ad_repeat.append(ad_repeat_entry)
+        self.update_load()
 
     def add_advertisement_init(self, path, repeat):
         self.number = self.number + 1
@@ -212,24 +224,30 @@ class MediaPlanApp:
         ad_frame.pack(padx=5, pady=5)
         self.ad_frame_list.append(ad_frame)
 
-        tk.Label(ad_frame, text= str(self.number) + ". Файл рекламы:").grid(row=0, column=0, padx=5, pady=5)
+        tk.Label(ad_frame, text=str(self.number) + ". Файл рекламы:").grid(row=0, column=0, padx=5, pady=5)
         ad_file_entry = tk.Entry(ad_frame, width=30)
         ad_file_entry.grid(row=0, column=1, padx=5, pady=5)
         ad_file_entry.insert(0, path)
         dur_label = tk.Label(ad_frame, text='')
         dur_label.grid(row=0, column=5, padx=5, pady=5)
-        tk.Button(ad_frame, text="Обзор", command=lambda: self.browse_ad_file(ad_file_entry, dur_label)).grid(row=0, column=2, padx=5, pady=5)
+        tk.Button(ad_frame, text="Обзор", command=lambda: self.browse_ad_file(ad_file_entry, dur_label)).grid(row=0,
+                                                                                                              column=2,
+                                                                                                              padx=5,
+                                                                                                              pady=5)
 
         tk.Label(ad_frame, text="Повторы:").grid(row=0, column=3, padx=5, pady=5)
         ad_repeat_entry = ttk.Combobox(ad_frame, values=["20", "15", "10", "5"])
         ad_repeat_entry.set(repeat)
         ad_repeat_entry.grid(row=0, column=4, padx=5, pady=5)
 
+        ad_file_entry.bind("<KeyRelease>", lambda event: self.update_load())
+        ad_repeat_entry.bind("<<ComboboxSelected>>", lambda event: self.update_load())
+
         self.ad_files.append(ad_file_entry)
         self.ad_repeat.append(ad_repeat_entry)
+        self.update_load()
 
     def delete_advertisement(self):
-        print(len(self.ad_frame_list))
         if len(self.ad_frame_list) == 0:
             messagebox.showerror("Ошибка", "Нет рекламы, которую можно удалить.")
         else:
@@ -240,15 +258,15 @@ class MediaPlanApp:
             self.ad_frame_list.pop()
             self.ad_repeat.pop()
             self.ad_files.pop()
+            self.update_load()
 
     def browse_ad_file(self, ad_file_entry, dur_label):
         file = filedialog.askopenfilename(filetypes=[("Audio files", "*.mp3 *.wav *.flac *.m4a *.ogg")])
         if file:
             ad_file_entry.delete(0, tk.END)
             ad_file_entry.insert(0, file)
-        dur_label.config (text = 'Продолжительность: ' +  str(int(AudioSegment.from_file(file).duration_seconds)) + ' сек.')
-        
-        
+        dur_label.config(text='Продолжительность: ' + str(int(AudioSegment.from_file(file).duration_seconds)) + ' сек.')
+        self.update_load()
 
     def generate_media_plan(self):
         ad_durations = []
@@ -272,7 +290,8 @@ class MediaPlanApp:
                 ad_dur = int(ad_dur)
                 ad_repeat = int(ad_repeat)
             except ValueError:
-                messagebox.showerror("Ошибка", "Продолжительность и количество повторов для рекламы должны быть целыми числами.")
+                messagebox.showerror("Ошибка",
+                                     "Продолжительность и количество повторов для рекламы должны быть целыми числами.")
                 return
 
             ad_durations.append(ad_dur)
@@ -297,16 +316,16 @@ class MediaPlanApp:
         song_dur = []
 
         # Обработка музыкальных файлов
-        
+
         for file_path in os.listdir(self.music_files_entry.get()):
             filename = os.path.basename(file_path)
             try:
-                song = AudioSegment.from_file(self.music_files_entry.get() + '/'+ file_path).duration_seconds
+                song = AudioSegment.from_file(self.music_files_entry.get() + '/' + file_path).duration_seconds
                 song_dur.append(song)
                 song_name.append(filename)
             except Exception as e:
                 print(f"Ошибка при обработке файла {filename}: {e}")
-                #song_dur.append(None)
+                # song_dur.append(None)
 
         # Преобразование времени
         object_time1 = hour_to_seconds(self.start_time)
@@ -365,7 +384,7 @@ class MediaPlanApp:
         else:
             end_time = object_time2
 
-        self.load.config(text = "Загружаемость: " + "{:.2f}".format(percent * 100) + "%")
+        self.load.config(text="Загружаемость: " + "{:.2f}".format(percent * 100) + "%")
 
         wb.create_sheet(str(int(working_time / 3600)))
         ws = wb[str(int(working_time / 3600))]
@@ -524,19 +543,52 @@ class MediaPlanApp:
 
         ws.column_dimensions['A'].width = 66
 
-        filename = f"Медиаплан {len(self.ad_name)} реклам, средняя прод. {sum(self.ad_dur)/len(self.ad_name)} сек, раб. время {int(working_time/3600)} ч., {current_datetime}.xlsx"
+        filename = f"Медиаплан {len(self.ad_name)} реклам, средняя прод. {sum(self.ad_dur) / len(self.ad_name)} сек, раб. время {int(working_time / 3600)} ч., {current_datetime}.xlsx"
 
         del wb['Sheet']
         wb.save(filename)
         messagebox.showinfo("Успех", f"Медиаплан успешно создан и сохранен под именем {filename}!")
-    
+
+    def update_load(self):
+        if not self.start_time_entry.get() or not self.end_time_entry.get():
+            return
+
+        ad_durations = []
+        ad_repeats = []
+
+        for ad_file_entry, ad_repeat_entry in zip(self.ad_files, self.ad_repeat):
+            ad_file = ad_file_entry.get()
+            ad_dur = AudioSegment.from_file(ad_file).duration_seconds if os.path.exists(ad_file) else 0
+            ad_repeat = ad_repeat_entry.get()
+
+            try:
+                ad_dur = int(ad_dur)
+                ad_repeat = int(ad_repeat)
+            except ValueError:
+                return
+
+            ad_durations.append(ad_dur)
+            ad_repeats.append(ad_repeat)
+
+        start_time = hour_to_seconds(self.start_time_entry.get())
+        end_time = hour_to_seconds(self.end_time_entry.get())
+
+        if end_time < start_time:
+            working_time = 86400 + end_time - start_time
+        else:
+            working_time = end_time - start_time
+
+        ad_sum = sum(dur * repeat for dur, repeat in zip(ad_durations, ad_repeats))
+        percent = ad_sum / working_time
+        self.load.config(text="Загружаемость: " + "{:.2f}".format(percent * 100) + "%")
+
     def save_json(self):
         data = {
             "music": self.music_files_entry.get(),
             "start": self.start_time_entry.get(),
             "end": self.end_time_entry.get()
-            }
-        
+        }
+
         if len(self.ad_frame_list) != 0:
             ads = []
             for i in range(len(self.ad_frame_list)):
@@ -547,7 +599,7 @@ class MediaPlanApp:
                 else:
                     ad_info.append(self.ad_repeat[i].get())
                 ads.append(ad_info)
-            data.update({"ad" : ads})
+            data.update({"ad": ads})
         exe_path = os.path.abspath(sys.argv[0])
         exe_dir = os.path.dirname(exe_path)
 
@@ -555,11 +607,7 @@ class MediaPlanApp:
         with open(exe_dir + "/data.json", "w", encoding='ascii') as outfile:
             outfile.write(json_object)
 
-        
         self.root.destroy()
-            
-
-
 
 
 if __name__ == "__main__":
