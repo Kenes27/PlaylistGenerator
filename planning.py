@@ -559,7 +559,10 @@ class MediaPlanApp:
         for ad_file_entry, ad_repeat_entry in zip(self.ad_files, self.ad_repeat):
             ad_file = ad_file_entry.get()
             ad_dur = AudioSegment.from_file(ad_file).duration_seconds if os.path.exists(ad_file) else 0
-            ad_repeat = ad_repeat_entry.get()
+            if isinstance(ad_repeat_entry, ttk.Combobox):
+                ad_repeat = ad_repeat_entry.get()
+            else:
+                ad_repeat = ad_repeat_entry
 
             try:
                 ad_dur = int(ad_dur)
