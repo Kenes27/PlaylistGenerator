@@ -207,7 +207,7 @@ class MediaPlanApp:
                                                                                                               pady=5)
 
         tk.Label(ad_frame, text="Повторы:").grid(row=0, column=3, padx=5, pady=5)
-        ad_repeat_entry = ttk.Combobox(ad_frame, values=["20", "15", "10", "5"])
+        ad_repeat_entry = ttk.Combobox(ad_frame, values=["20", "15", "10", "5"], state="readonly")
         ad_repeat_entry.set("20")
         ad_repeat_entry.grid(row=0, column=4, padx=5, pady=5)
 
@@ -236,7 +236,7 @@ class MediaPlanApp:
                                                                                                               pady=5)
 
         tk.Label(ad_frame, text="Повторы:").grid(row=0, column=3, padx=5, pady=5)
-        ad_repeat_entry = ttk.Combobox(ad_frame, values=["20", "15", "10", "5"])
+        ad_repeat_entry = ttk.Combobox(ad_frame, values=["20", "15", "10", "5"], state="readonly")
         ad_repeat_entry.set(repeat)
         ad_repeat_entry.grid(row=0, column=4, padx=5, pady=5)
 
