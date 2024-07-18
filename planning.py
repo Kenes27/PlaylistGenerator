@@ -190,8 +190,50 @@ class MediaPlanApp:
             self.music_files_entry.delete(0, tk.END)
             self.music_files_entry.insert(0, files)
 
+    def move_advertisement_up(self, index):
+        if index > 0:
+            self.swap_advertisements(index, index - 1)
+
+    def move_advertisement_down(self, index):
+        if index < len(self.ad_frame_list) - 1:
+            self.swap_advertisements(index, index + 1)
+
+    def swap_advertisements(self, index1, index2):
+        # Swap in the ad_frame_list
+        self.ad_frame_list[index1], self.ad_frame_list[index2] = self.ad_frame_list[index2], self.ad_frame_list[index1]
+        self.ad_files[index1], self.ad_files[index2] = self.ad_files[index2], self.ad_files[index1]
+        self.ad_repeat[index1], self.ad_repeat[index2] = self.ad_repeat[index2], self.ad_repeat[index1]
+
+        # Repack the frames in the new order
+        for widget in self.ad_frame.winfo_children():
+            widget.pack_forget()
+        for i, frame in enumerate(self.ad_frame_list):
+            frame.pack(padx=5, pady=5)
+            self.update_move_buttons(i)
+
+        # Update the labels to reflect the new order
+        for i, frame in enumerate(self.ad_frame_list):
+            frame.winfo_children()[0].config(text=f"{i + 1}. Файл рекламы:")
+
+        self.update_load()
+
+    def update_move_buttons(self, index):
+        frame = self.ad_frame_list[index]
+        move_up_button = frame.winfo_children()[6]
+        move_down_button = frame.winfo_children()[7]
+
+        move_up_button.config(command=lambda idx=index: self.move_advertisement_up(idx))
+        move_down_button.config(command=lambda idx=index: self.move_advertisement_down(idx))
+
+    def add_move_buttons(self, index):
+        frame = self.ad_frame_list[index]
+        tk.Button(frame, text="Вверх", command=lambda idx=index: self.move_advertisement_up(idx), bg='lightgreen').grid(
+            row=0, column=6, padx=5, pady=5)
+        tk.Button(frame, text="Вниз", command=lambda idx=index: self.move_advertisement_down(idx), bg='lightblue').grid(
+            row=0, column=7, padx=5, pady=5)
+
     def add_advertisement(self):
-        self.number = self.number + 1
+        self.number += 1
         ad_frame = tk.Frame(self.ad_frame)
         ad_frame.pack(padx=5, pady=5)
         self.ad_frame_list.append(ad_frame)
@@ -216,10 +258,12 @@ class MediaPlanApp:
 
         self.ad_files.append(ad_file_entry)
         self.ad_repeat.append(ad_repeat_entry)
+
+        self.add_move_buttons(self.number - 1)
         self.update_load()
 
     def add_advertisement_init(self, path, repeat):
-        self.number = self.number + 1
+        self.number += 1
         ad_frame = tk.Frame(self.ad_frame)
         ad_frame.pack(padx=5, pady=5)
         self.ad_frame_list.append(ad_frame)
@@ -245,13 +289,15 @@ class MediaPlanApp:
 
         self.ad_files.append(ad_file_entry)
         self.ad_repeat.append(ad_repeat_entry)
+
+        self.add_move_buttons(self.number - 1)
         self.update_load()
 
     def delete_advertisement(self):
         if len(self.ad_frame_list) == 0:
             messagebox.showerror("Ошибка", "Нет рекламы, которую можно удалить.")
         else:
-            self.number = self.number - 1
+            self.number -= 1
             for widget in self.ad_frame_list[-1].winfo_children():
                 widget.destroy()
             self.ad_frame_list[-1].destroy()
