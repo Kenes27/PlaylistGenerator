@@ -21,10 +21,15 @@ class MediaPlanGenerator:
         for ad_file_entry, ad_repeat_entry in zip(self.parent.ad_files, self.parent.ad_repeat_combo):
             ad_file = ad_file_entry.get()
             ad_name = os.path.basename(ad_file)
-            ad_dur = AudioSegment.from_file(ad_file).duration_seconds
+            ad_dur = None
+            if ad_file and os.path.isfile(ad_file) and os.path.splitext(ad_file)[-1].lower() in {".mp3", ".wav", ".flac", ".m4a", ".ogg"}:
+                ad_dur = AudioSegment.from_file(ad_file).duration_seconds
+            else:
+                messagebox.showerror("Ошибка", "Пожалуйста, заполните все поля для каждой рекламы.")
+                return False
             ad_repeat = ad_repeat_entry.get()
 
-            if not ad_file or not ad_dur or not ad_repeat:
+            if not ad_file or not ad_repeat:
                 messagebox.showerror("Ошибка", "Пожалуйста, заполните все поля для каждой рекламы.")
                 return False
 

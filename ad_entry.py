@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog
 from pydub import AudioSegment
+import os
 
 class AdEntry:
 
@@ -20,6 +21,9 @@ class AdEntry:
             self.ad_file_entry.insert(0, ad_data[0])
         self.dur_label = tk.Label(self.frame, text='')
         self.dur_label.grid(row=0, column=5, padx=5, pady=5)
+        if ad_data and os.path.isfile(ad_data[0]) and os.path.splitext(ad_data[0])[-1].lower() in {".mp3", ".wav", ".flac", ".m4a", ".ogg"}:
+            self.dur_label.config(text='Продолжительность: ' + str(int(AudioSegment.from_file(ad_data[0]).duration_seconds)) + ' сек.')
+
         tk.Button(self.frame, text="Обзор", command=self.browse_ad_file).grid(row=0, column=2, padx=5, pady=5)
 
         tk.Label(self.frame, text="Повторы:").grid(row=0, column=3, padx=5, pady=5)
