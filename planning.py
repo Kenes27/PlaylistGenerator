@@ -107,6 +107,7 @@ class MediaPlanApp:
         # Инициализация переменных
         self.ad_dur = []
         self.ad_repeat = []
+        self.ad_repeat_combo = []
         self.ad_name = []
         self.ad_files = []
         self.music_files = []
@@ -202,7 +203,7 @@ class MediaPlanApp:
         # Swap in the ad_frame_list
         self.ad_frame_list[index1], self.ad_frame_list[index2] = self.ad_frame_list[index2], self.ad_frame_list[index1]
         self.ad_files[index1], self.ad_files[index2] = self.ad_files[index2], self.ad_files[index1]
-        self.ad_repeat[index1], self.ad_repeat[index2] = self.ad_repeat[index2], self.ad_repeat[index1]
+        self.ad_repeat_combo[index1], self.ad_repeat_combo[index2] = self.ad_repeat_combo[index2], self.ad_repeat_combo[index1]
 
         # Repack the frames in the new order
         for widget in self.ad_frame.winfo_children():
@@ -257,7 +258,7 @@ class MediaPlanApp:
         ad_repeat_entry.bind("<<ComboboxSelected>>", lambda event: self.update_load())
 
         self.ad_files.append(ad_file_entry)
-        self.ad_repeat.append(ad_repeat_entry)
+        self.ad_repeat_combo.append(ad_repeat_entry)
 
         self.add_move_buttons(self.number - 1)
         self.update_load()
@@ -287,8 +288,11 @@ class MediaPlanApp:
         ad_file_entry.bind("<KeyRelease>", lambda event: self.update_load())
         ad_repeat_entry.bind("<<ComboboxSelected>>", lambda event: self.update_load())
 
+        if os.path.isfile(path) and os.path.splitext(path)[-1].lower() in {".mp3", ".wav", ".flac", ".m4a", ".ogg"}:
+            dur_label.config(text='Продолжительность: ' + str(int(AudioSegment.from_file(path).duration_seconds)) + ' сек.')
+
         self.ad_files.append(ad_file_entry)
-        self.ad_repeat.append(ad_repeat_entry)
+        self.ad_repeat_combo.append(ad_repeat_entry)
 
         self.add_move_buttons(self.number - 1)
         self.update_load()
@@ -302,7 +306,7 @@ class MediaPlanApp:
                 widget.destroy()
             self.ad_frame_list[-1].destroy()
             self.ad_frame_list.pop()
-            self.ad_repeat.pop()
+            self.ad_repeat_combo.pop()
             self.ad_files.pop()
             self.update_load()
 
@@ -311,7 +315,7 @@ class MediaPlanApp:
         if file:
             ad_file_entry.delete(0, tk.END)
             ad_file_entry.insert(0, file)
-        dur_label.config(text='Продолжительность: ' + str(int(AudioSegment.from_file(file).duration_seconds)) + ' сек.')
+            dur_label.config(text='Продолжительность: ' + str(int(AudioSegment.from_file(file).duration_seconds)) + ' сек.')
         self.update_load()
 
     def generate_media_plan(self):
@@ -319,14 +323,11 @@ class MediaPlanApp:
         ad_repeats = []
         ad_names = []
 
-        for ad_file_entry, ad_repeat_entry in zip(self.ad_files, self.ad_repeat):
+        for ad_file_entry, ad_repeat_entry in zip(self.ad_files, self.ad_repeat_combo):
             ad_file = ad_file_entry.get()
             ad_name = os.path.basename(ad_file)
             ad_dur = AudioSegment.from_file(ad_file).duration_seconds
-            if isinstance(ad_repeat_entry, int):
-                ad_repeat = ad_repeat_entry
-            else:
-                ad_repeat = ad_repeat_entry.get()
+            ad_repeat = ad_repeat_entry.get()
 
             if not ad_file or not ad_dur or not ad_repeat:
                 messagebox.showerror("Ошибка", "Пожалуйста, заполните все поля для каждой рекламы.")
@@ -363,6 +364,9 @@ class MediaPlanApp:
 
         # Обработка музыкальных файлов
 
+        if(os.path.isdir(self.music_files_entry.get()) is False):
+            messagebox.showerror("Ошибка", "Пожалуйста, укажите папку с музыкальными файлами.")
+
         for file_path in os.listdir(self.music_files_entry.get()):
             filename = os.path.basename(file_path)
             try:
@@ -371,6 +375,7 @@ class MediaPlanApp:
                 song_name.append(filename)
             except Exception as e:
                 print(f"Ошибка при обработке файла {filename}: {e}")
+                messagebox.showerror("Ошибка", f"Ошибка при обработке файла {filename}: {e}")
                 # song_dur.append(None)
 
         # Преобразование времени
@@ -602,13 +607,10 @@ class MediaPlanApp:
         ad_durations = []
         ad_repeats = []
 
-        for ad_file_entry, ad_repeat_entry in zip(self.ad_files, self.ad_repeat):
+        for ad_file_entry, ad_repeat_entry in zip(self.ad_files, self.ad_repeat_combo):
             ad_file = ad_file_entry.get()
             ad_dur = AudioSegment.from_file(ad_file).duration_seconds if os.path.exists(ad_file) else 0
-            if isinstance(ad_repeat_entry, ttk.Combobox):
-                ad_repeat = ad_repeat_entry.get()
-            else:
-                ad_repeat = ad_repeat_entry
+            ad_repeat = ad_repeat_entry.get()
 
             try:
                 ad_dur = int(ad_dur)
@@ -643,10 +645,7 @@ class MediaPlanApp:
             for i in range(len(self.ad_frame_list)):
                 ad_info = []
                 ad_info.append(self.ad_files[i].get())
-                if (isinstance(self.ad_repeat[i], int)):
-                    ad_info.append(str(self.ad_repeat[i]))
-                else:
-                    ad_info.append(self.ad_repeat[i].get())
+                ad_info.append(self.ad_repeat_combo[i].get())
                 ads.append(ad_info)
             data.update({"ad": ads})
         exe_path = os.path.abspath(sys.argv[0])
