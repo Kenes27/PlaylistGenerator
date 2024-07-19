@@ -84,5 +84,4 @@ def rearrange(index, lists):
     for i in range(len(index)):
         new_list.append(lists[index[i]])
 
-
     return new_list

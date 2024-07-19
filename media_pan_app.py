@@ -1,8 +1,7 @@
-# media_plan_app.py
 import os
 import sys
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, Toplevel, Label
 import json
 from ad_entry import AdEntry
 from media_plan_generator import MediaPlanGenerator
@@ -13,6 +12,7 @@ from pydub import AudioSegment
 class MediaPlanApp:
 
     def __init__(self, root):
+        self.waiting_window = None
         self.root = root
         self.root.title("Генератор медиаплана")
 
@@ -158,9 +158,26 @@ class MediaPlanApp:
             self.ad_files.pop()
             self.update_load()
 
+    def show_waiting_message(self):
+        self.waiting_window = Toplevel(self.root)
+        self.waiting_window.title("Пожалуйста, подождите")
+        self.waiting_window.geometry("300x100")
+        Label(self.waiting_window, text="Медиаплан генерируется, пожалуйста, подождите...").pack(expand=True)
+        self.waiting_window.grab_set()
+        self.root.update_idletasks()
+
+    def close_waiting_message(self):
+        if hasattr(self, 'waiting_window') and self.waiting_window:
+            self.waiting_window.destroy()
+
     def generate_media_plan(self):
+        self.show_waiting_message()
+        self.root.after(100, self._generate_media_plan)
+
+    def _generate_media_plan(self):
         generator = MediaPlanGenerator(self)
         generator.generate()
+        self.close_waiting_message()
 
     def update_load(self):
         if not self.start_time_entry.get() or not self.end_time_entry.get():

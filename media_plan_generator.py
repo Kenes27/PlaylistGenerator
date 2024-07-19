@@ -277,7 +277,8 @@ class MediaPlanGenerator:
 
         ws.column_dimensions['A'].width = 66
 
-        filename = f"Медиаплан {len(self.ad_names)} реклам, средняя прод. {sum(self.ad_durations) / len(self.ad_names)} сек, раб. время {int(working_time / 3600)} ч., {current_datetime}.xlsx"
+        average_duration = round(sum(self.ad_durations) / len(self.ad_names), 1)
+        filename = f"Медиаплан {len(self.ad_names)} реклам, средняя прод. {average_duration} сек, раб. время {int(working_time / 3600)} ч., {current_datetime}.xlsx"
 
         del wb['Sheet']
         wb.save(filename)
