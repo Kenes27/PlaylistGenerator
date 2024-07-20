@@ -115,7 +115,7 @@ class MediaPlanApp:
         for widget in self.ad_frame.winfo_children():
             widget.pack_forget()
         for i, frame in enumerate(self.ad_frame_list):
-            frame.pack(padx=5, pady=5)
+            frame.pack(padx=5, pady=5, anchor="w")
             self.update_move_buttons(i)
 
         for i, frame in enumerate(self.ad_frame_list):
@@ -125,8 +125,8 @@ class MediaPlanApp:
 
     def update_move_buttons(self, index):
         frame = self.ad_frame_list[index]
-        move_up_button = frame.winfo_children()[6]
-        move_down_button = frame.winfo_children()[7]
+        move_up_button = frame.winfo_children()[7]
+        move_down_button = frame.winfo_children()[8]
 
         move_up_button.config(command=lambda idx=index: self.move_advertisement_up(idx))
         move_down_button.config(command=lambda idx=index: self.move_advertisement_down(idx))

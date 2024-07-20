@@ -9,7 +9,7 @@ class AdEntry:
         self.parent = parent
         self.index = index
         self.frame = tk.Frame(parent.ad_frame)
-        self.frame.pack(padx=5, pady=5)
+        self.frame.pack(padx=5, pady=5, anchor="w")
         self.create_widgets(ad_data)
         parent.ad_frame_list.append(self.frame)
 
@@ -20,9 +20,12 @@ class AdEntry:
         if ad_data:
             self.ad_file_entry.insert(0, ad_data[0])
         self.dur_label = tk.Label(self.frame, text='')
-        self.dur_label.grid(row=0, column=5, padx=5, pady=5)
+        self.name_label = tk.Label(self.frame, text='')
+        self.name_label.grid(row=0, column=5, padx=5, pady=5)
+        self.dur_label.grid(row=0, column=6, padx=5, pady=5)
         if ad_data and os.path.isfile(ad_data[0]) and os.path.splitext(ad_data[0])[-1].lower() in {".mp3", ".wav", ".flac", ".m4a", ".ogg"}:
             self.dur_label.config(text='Продолжительность: ' + str(int(AudioSegment.from_file(ad_data[0]).duration_seconds)) + ' сек.')
+            self.name_label.config(text = os.path.basename(ad_data[0]))
 
         tk.Button(self.frame, text="Обзор", command=self.browse_ad_file).grid(row=0, column=2, padx=5, pady=5)
 
@@ -43,12 +46,13 @@ class AdEntry:
         if file:
             self.ad_file_entry.delete(0, tk.END)
             self.ad_file_entry.insert(0, file)
+            self.name_label.config(text = os.path.basename(file))
             self.dur_label.config(text='Продолжительность: ' + str(int(AudioSegment.from_file(file).duration_seconds)) + ' сек.')
         self.parent.update_load()
 
     def add_move_buttons(self):
-        tk.Button(self.frame, text="Вверх", command=lambda: self.parent.move_advertisement_up(self.index), bg='lightgreen').grid(row=0, column=6, padx=5, pady=5)
-        tk.Button(self.frame, text="Вниз", command=lambda: self.parent.move_advertisement_down(self.index), bg='lightblue').grid(row=0, column=7, padx=5, pady=5)
+        tk.Button(self.frame, text="Вверх", command=lambda: self.parent.move_advertisement_up(self.index), bg='lightgreen').grid(row=0, column=7, padx=5, pady=5)
+        tk.Button(self.frame, text="Вниз", command=lambda: self.parent.move_advertisement_down(self.index), bg='lightblue').grid(row=0, column=8, padx=5, pady=5)
 
     def update_index(self, new_index):
         self.index = new_index
